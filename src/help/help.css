@@ -57,11 +57,27 @@ body {
   cursor: pointer;
 }
 
+.action-btn:hover {
+  border-color: rgba(255, 140, 66, 0.28);
+  background: rgba(255, 140, 66, 0.08);
+}
+
 .hero,
 .card {
   border: 1px solid var(--line);
   border-radius: 22px;
   background: rgba(23, 28, 35, 0.92);
+}
+
+:root[data-theme="light"] .hero,
+:root[data-theme="light"] .card,
+:root[data-theme="light"] .action-btn {
+  background: rgba(255, 255, 255, 0.96);
+}
+
+:root[data-theme="light"] pre {
+  background: #f3f5f8;
+  color: #364152;
 }
 
 .hero {

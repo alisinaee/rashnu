@@ -217,11 +217,18 @@
 
   function bindEvents() {
     reloadAllButton.addEventListener("click", async () => {
+      lastStructureFingerprint = "";
       await chrome.runtime.sendMessage({
         type: "DIROB_RELOAD_ALL"
       });
       logger.info("panel", "reload_all_clicked");
       await refreshState();
+      window.setTimeout(() => {
+        refreshState().catch(() => {});
+      }, 450);
+      window.setTimeout(() => {
+        refreshState().catch(() => {});
+      }, 1200);
     });
 
     toggleSettingsButton.addEventListener("click", async () => {
@@ -333,6 +340,7 @@
         type: "DIROB_SET_LANGUAGE",
         payload: { language }
       });
+      lastStructureFingerprint = "";
       await refreshState();
     });
 
@@ -341,6 +349,7 @@
         type: "DIROB_ADJUST_FONT_SCALE",
         payload: { delta: -1 }
       });
+      lastStructureFingerprint = "";
       await refreshState();
     });
 
@@ -349,6 +358,7 @@
         type: "DIROB_ADJUST_FONT_SCALE",
         payload: { delta: 1 }
       });
+      lastStructureFingerprint = "";
       await refreshState();
     });
 

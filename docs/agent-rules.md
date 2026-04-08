@@ -22,6 +22,12 @@
 - Ensure in RTL the reload for each element should be on top right.
 
 ## Recent Changes (Last 20)
+### 2026-04-08T22:06:17+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`, `src/help/help.css`
+- Summary: Improved light-theme contrast for the help page and panel hover states, forced top refresh to rebuild panel state with delayed follow-up refreshes, clamped item tools to the right side, and improved card text wrapping/visibility.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:9f9ad1d52c20 -->
+
 ### 2026-04-08T21:42:48+03:30
 - Changed files: `src/panel/panel.html`, `src/panel/panel.js`, `src/panel/panel.css`, `src/background.js`, `src/help/help.html`, `src/help/help.css`, `src/help/help.js`
 - Summary: Aligned the header with the brand block on the right and actions on the left, added theme mode for the panel and help page with system default, added real help-page language switching, and hardened list layout rendering to avoid collapsed item cards.
@@ -119,4 +125,4 @@
 <!-- fingerprint:f0a6a8e2fd7b -->
 
 ## Last Updated
-- 2026-04-08T21:42:48+03:30
+- 2026-04-08T22:06:17+03:30

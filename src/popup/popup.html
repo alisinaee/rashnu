@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dirob</title>
+    <style>
+      body {
+        margin: 0;
+        min-width: 260px;
+        padding: 16px;
+        font-family: Tahoma, "Segoe UI", sans-serif;
+        background: #fffaf5;
+        color: #1f2937;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 18px;
+      }
+      p {
+        margin: 0 0 14px;
+        font-size: 12px;
+        line-height: 1.6;
+        color: #475569;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 14px;
+        background: white;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      }
+      input {
+        width: 18px;
+        height: 18px;
+      }
+      .status {
+        margin-top: 12px;
+        font-size: 11px;
+        color: #64748b;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Dirob</h1>
+    <p>حالت دیباگ را برای دیدن امتیاز تطابق و کاندیداهای ترب روشن کنید.</p>
+    <label>
+      <span>Debug mode</span>
+      <input id="debugToggle" type="checkbox">
+    </label>
+    <div class="status" id="statusText">در حال خواندن تنظیمات...</div>
+    <script src="popup.js"></script>
+  </body>
+</html>

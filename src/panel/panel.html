@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dirob</title>
+    <link rel="stylesheet" href="panel.css">
+  </head>
+  <body>
+    <div class="panel-shell">
+      <header class="panel-header">
+        <div class="header-actions">
+          <button class="icon-button" data-action="reload-all" title="Reload all">↻</button>
+          <button class="icon-button" data-action="toggle-settings" title="Settings">⚙</button>
+          <button class="icon-button" data-action="open-help" title="Help">?</button>
+        </div>
+        <div class="brand-block">
+          <div class="brand-mark">D</div>
+          <div>
+            <h1>Dirob</h1>
+            <p data-page-mode>Waiting for a supported page...</p>
+          </div>
+        </div>
+      </header>
+
+      <section class="settings-panel">
+        <div class="settings-topbar">
+          <h2 class="settings-title" data-settings-title>تنظیمات</h2>
+          <button class="icon-button settings-close" data-action="close-settings" title="Close settings">✕</button>
+        </div>
+        <div class="settings-body" data-settings-body>
+          <div class="settings-grid settings-grid--top">
+            <button class="toggle-button" data-action="toggle-language">FA</button>
+            <div class="helper-indicator" data-log-helper-status>Logger offline</div>
+          </div>
+          <div class="switch-grid">
+            <button class="switch-row" data-action="toggle-selection" type="button">
+              <span class="switch-label" data-switch-label="selection">انتخاب عنصر</span>
+              <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+            </button>
+            <button class="switch-row" data-action="toggle-sync-page-view" type="button">
+              <span class="switch-label" data-switch-label="sync-page-view">همگام با دید صفحه</span>
+              <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+            </button>
+            <button class="switch-row" data-action="toggle-minimal-view" type="button">
+              <span class="switch-label" data-switch-label="minimal-view">نمای مینیمال</span>
+              <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+            </button>
+            <button class="switch-row" data-action="toggle-guide-numbers" type="button">
+              <span class="switch-label" data-switch-label="guide-numbers">شماره راهنما</span>
+              <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+            </button>
+            <button class="switch-row" data-action="toggle-auto-logs" type="button">
+              <span class="switch-label" data-switch-label="auto-logs">ثبت خودکار لاگ</span>
+              <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+            </button>
+            <button class="switch-row" data-action="toggle-debug" type="button">
+              <span class="switch-label" data-switch-label="debug">دیباگ</span>
+              <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+            </button>
+          </div>
+          <div class="settings-grid settings-grid--paired">
+            <div class="paired-card">
+              <span class="paired-label" data-layout-label>چیدمان</span>
+              <div class="segmented-control">
+                <button class="toggle-button segmented-button" data-action="set-layout-list">List</button>
+                <button class="toggle-button segmented-button" data-action="set-layout-grid">Grid</button>
+              </div>
+            </div>
+            <div class="paired-card">
+              <span class="paired-label" data-font-label>اندازه</span>
+              <div class="segmented-control">
+                <button class="toggle-button segmented-button" data-action="font-down">-</button>
+                <div class="font-value" data-font-meta>Size: 0</div>
+                <button class="toggle-button segmented-button" data-action="font-up">+</button>
+              </div>
+            </div>
+          </div>
+          <p class="settings-help" data-settings-help>
+            حالت عادی: محصولات قابل مشاهده روی صفحه بررسی می‌شوند.
+          </p>
+          <div class="log-row">
+            <p class="settings-help" data-log-meta>Logs: 0</p>
+            <div class="log-links">
+              <button class="text-button" data-action="clear-logs">پاک کردن</button>
+            </div>
+          </div>
+          <p class="settings-help settings-help--path" data-log-path>لاگ‌ها در research/artifacts/dirob ذخیره می‌شوند.</p>
+        </div>
+      </section>
+
+      <section class="summary-card" data-summary-card>
+        <p data-summary-text>در حال دریافت وضعیت تب فعال...</p>
+      </section>
+
+      <section class="list" data-items-list></section>
+    </div>
+    <script src="../lib/logger.js"></script>
+    <script src="../lib/normalize.js"></script>
+    <script src="panel.js"></script>
+  </body>
+</html>

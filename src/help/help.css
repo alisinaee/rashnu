@@ -1,0 +1,103 @@
+:root {
+  color-scheme: dark;
+  --bg: #101318;
+  --panel: #171c23;
+  --line: rgba(255, 255, 255, 0.08);
+  --text: #f4f6f8;
+  --muted: #a5b0bf;
+  --accent: #ff984f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #1b212b 0%, var(--bg) 52%);
+  color: var(--text);
+  font: 14px/1.8 "SF Pro Display", "Segoe UI", Tahoma, sans-serif;
+}
+
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 18px 48px;
+}
+
+.hero,
+.card {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(23, 28, 35, 0.92);
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  margin-bottom: 18px;
+}
+
+.hero-mark {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--accent) 0%, #ffb36b 100%);
+  color: #111317;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.hero h1,
+.card h2 {
+  margin: 0 0 8px;
+}
+
+.hero p,
+.card p,
+.card li {
+  margin: 0;
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.card {
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+ul {
+  padding-inline-start: 18px;
+  margin: 0;
+}
+
+pre {
+  overflow: auto;
+  padding: 14px;
+  border-radius: 14px;
+  background: #0e1217;
+  border: 1px solid var(--line);
+  color: #d9e0e8;
+  direction: ltr;
+  text-align: left;
+}
+
+a {
+  color: #ffb978;
+}
+
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

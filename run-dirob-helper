@@ -1,0 +1,4 @@
+#!/bin/zsh
+set -euo pipefail
+cd /Users/drnoobmaster/development/Works/projects/torob
+exec python3 scripts/dirob_log_helper.py

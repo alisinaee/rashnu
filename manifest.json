@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Dirob",
+  "version": "0.1.0",
+  "description": "Compare Digikala listing prices with Torob while you browse.",
+  "permissions": ["activeTab", "storage", "scripting", "tabs", "sidePanel", "downloads"],
+  "host_permissions": [
+    "https://www.digikala.com/*",
+    "https://api.digikala.com/*",
+    "https://torob.com/*",
+    "https://api.torob.com/*",
+    "http://127.0.0.1:45173/*",
+    "http://localhost:45173/*"
+  ],
+  "action": {
+    "default_title": "Dirob"
+  },
+  "side_panel": {
+    "default_path": "src/panel/panel.html"
+  },
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.digikala.com/*", "https://torob.com/*"],
+      "js": [
+        "src/lib/logger.js",
+        "src/lib/normalize.js",
+        "src/lib/match.js",
+        "src/lib/extract-listing-cards.js",
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

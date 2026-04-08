@@ -29,6 +29,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   let panelLayoutMode = "list";
   let minimalViewEnabled = false;
   let settingsOpen = false;
+  let themeMode = "system";
   let logFlushTimer = null;
   let stateFlushTimer = null;
   let stateSnapshotSerial = 0;
@@ -66,7 +67,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       "dirobFontScale",
       "dirobLayoutMode",
       "dirobMinimalViewEnabled",
-      "dirobSettingsOpen"
+      "dirobSettingsOpen",
+      "dirobThemeMode"
     ]);
     debugEnabled = Boolean(stored.dirobDebugEnabled);
     selectionModeEnabled = Boolean(stored.dirobSelectionModeEnabled);
@@ -78,6 +80,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     panelLayoutMode = stored.dirobLayoutMode === "grid" ? "grid" : "list";
     minimalViewEnabled = Boolean(stored.dirobMinimalViewEnabled);
     settingsOpen = Boolean(stored.dirobSettingsOpen);
+    themeMode = ["system", "dark", "light"].includes(stored.dirobThemeMode) ? stored.dirobThemeMode : "system";
   }
 
   async function loadLogs() {
@@ -141,6 +144,12 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
     if (Object.prototype.hasOwnProperty.call(changes, "dirobSettingsOpen")) {
       settingsOpen = Boolean(changes.dirobSettingsOpen.newValue);
+      notifyPanels();
+    }
+    if (Object.prototype.hasOwnProperty.call(changes, "dirobThemeMode")) {
+      themeMode = ["system", "dark", "light"].includes(changes.dirobThemeMode.newValue)
+        ? changes.dirobThemeMode.newValue
+        : "system";
       notifyPanels();
     }
   });
@@ -323,6 +332,18 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       });
       notifyPanels();
       sendResponse({ enabled: settingsOpen });
+      return false;
+    }
+
+    if (message.type === "DIROB_SET_THEME_MODE") {
+      themeMode = ["system", "dark", "light"].includes(message.payload?.themeMode)
+        ? message.payload.themeMode
+        : "system";
+      chrome.storage.local.set({
+        dirobThemeMode: themeMode
+      });
+      notifyPanels();
+      sendResponse({ themeMode });
       return false;
     }
 
@@ -1302,6 +1323,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       layoutMode: panelLayoutMode,
       minimalViewEnabled,
       settingsOpen,
+      themeMode,
       logCount: logEntries.length,
       logHelper: { ...logHelperStatus },
       page: serializePageState(state, activeTab)
@@ -1755,7 +1777,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         fontScale: panelFontScale,
         layoutMode: panelLayoutMode,
         minimalViewEnabled,
-        settingsOpen
+        settingsOpen,
+        themeMode
       },
       activeTabId: activeTab?.id || null,
       activePage: activeState ? serializePageState(activeState, activeTab) : null,

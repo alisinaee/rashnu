@@ -18,6 +18,7 @@
   const reloadAllButton = document.querySelector('[data-action="reload-all"]');
   const toggleSettingsButton = document.querySelector('[data-action="toggle-settings"]');
   const helpButton = document.querySelector('[data-action="open-help"]');
+  const themeButton = document.querySelector('[data-action="cycle-theme"]');
   const closeSettingsButton = document.querySelector('[data-action="close-settings"]');
   const selectionButton = document.querySelector('[data-action="toggle-selection"]');
   const syncPageViewButton = document.querySelector('[data-action="toggle-sync-page-view"]');
@@ -56,6 +57,10 @@
       settingsClose: "بستن",
       settingsOpen: "تنظیمات",
       help: "راهنما",
+      theme: "تم",
+      theme_system: "خودکار",
+      theme_dark: "تیره",
+      theme_light: "روشن",
       debug: "دیباگ",
       elementSelect: "انتخاب عنصر",
       syncPageView: "همگام با دید صفحه",
@@ -120,6 +125,10 @@
       settingsClose: "Close",
       settingsOpen: "Settings",
       help: "Help",
+      theme: "Theme",
+      theme_system: "System",
+      theme_dark: "Dark",
+      theme_light: "Light",
       debug: "Debug",
       elementSelect: "Element Select",
       syncPageView: "Sync Page View",
@@ -227,6 +236,17 @@
       await chrome.tabs.create({
         url: chrome.runtime.getURL("src/help/help.html")
       });
+    });
+
+    themeButton.addEventListener("click", async () => {
+      const order = ["system", "dark", "light"];
+      const current = order.includes(currentState?.themeMode) ? currentState.themeMode : "system";
+      const next = order[(order.indexOf(current) + 1) % order.length];
+      await chrome.runtime.sendMessage({
+        type: "DIROB_SET_THEME_MODE",
+        payload: { themeMode: next }
+      });
+      await refreshState();
     });
 
     closeSettingsButton.addEventListener("click", async () => {
@@ -409,6 +429,7 @@
 
     document.documentElement.lang = language;
     document.documentElement.dir = language === "fa" ? "rtl" : "ltr";
+    document.documentElement.dataset.theme = getEffectiveTheme(state?.themeMode);
     const scaleValue = 1 + ((state?.fontScale || 0) * 0.1);
     document.body.style.setProperty("--ui-scale", String(Math.max(0.55, Math.min(1.8, scaleValue))));
 
@@ -417,6 +438,7 @@
     helpButton.title = translation.help;
     closeSettingsButton.title = translation.settingsClose;
     languageButton.textContent = translation.langButton;
+    themeButton.textContent = `${translation.theme}: ${translation[`theme_${state?.themeMode || "system"}`] || translation.theme_system}`;
     switchLabels.selection.textContent = translation.elementSelect;
     switchLabels.syncPageView.textContent = translation.syncPageView;
     switchLabels.minimalView.textContent = translation.minimalView;
@@ -937,6 +959,13 @@
       return isEnglish ? "Torob" : "ترب";
     }
     return isEnglish ? "Unknown" : "نامشخص";
+  }
+
+  function getEffectiveTheme(themeMode) {
+    if (themeMode === "dark" || themeMode === "light") {
+      return themeMode;
+    }
+    return window.matchMedia?.("(prefers-color-scheme: light)")?.matches ? "light" : "dark";
   }
 
   function t(language, key, values) {

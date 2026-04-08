@@ -15,6 +15,21 @@
   --bad: #ff7a7a;
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3f5f8;
+  --panel: #ffffff;
+  --panel-alt: #f3f5f8;
+  --panel-soft: #eef2f7;
+  --text: #121721;
+  --muted: #607086;
+  --line: rgba(17, 24, 39, 0.1);
+  --accent-soft: rgba(255, 140, 66, 0.12);
+  --good: #1d8a52;
+  --warn: #b88810;
+  --bad: #d04848;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -27,6 +42,10 @@ body {
   font-size: 14px;
   overflow: hidden;
   height: 100vh;
+}
+
+:root[data-theme="light"] body {
+  background: linear-gradient(180deg, #f3f5f8 0%, #e9edf3 100%);
 }
 
 .panel-shell {
@@ -59,12 +78,13 @@ html[dir="ltr"] .panel-shell {
 }
 
 .panel-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   padding: 14px;
   min-width: 0;
+  direction: ltr;
 }
 
 .header-actions {
@@ -72,14 +92,23 @@ html[dir="ltr"] .panel-shell {
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
+  justify-self: start;
 }
 
 .brand-block {
   display: flex;
   align-items: center;
+  flex-direction: row-reverse;
   gap: 12px;
   min-width: 0;
   flex: 1 1 auto;
+  justify-self: end;
+  text-align: end;
+  direction: rtl;
+}
+
+html[dir="ltr"] .brand-block {
+  direction: ltr;
 }
 
 .brand-block > div {
@@ -189,6 +218,10 @@ html[dir="ltr"] .panel-shell {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 10px;
+}
+
+.settings-grid--single {
+  grid-template-columns: 1fr;
 }
 
 .switch-grid {
@@ -374,6 +407,7 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
   padding: 12px 14px;
   flex: 0 0 auto;
   min-width: 0;
+  overflow: hidden;
 }
 
 .log-row {
@@ -414,6 +448,11 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   overflow-x: hidden;
+}
+
+.list.is-list {
+  display: flex !important;
+  flex-direction: column;
 }
 
 .list.is-grid {
@@ -457,6 +496,7 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
 .list.is-minimal .item-card {
   gap: 8px;
   padding: 10px;
+  min-height: 122px;
 }
 
 .list.is-minimal .item-top {
@@ -540,6 +580,8 @@ html[dir="ltr"] .switch-row.is-active .switch-thumb {
   transition: box-shadow 160ms ease, border-color 160ms ease, background-color 160ms ease;
   min-width: 0;
   overflow: hidden;
+  width: 100%;
+  min-height: 164px;
 }
 
 .item-tools {

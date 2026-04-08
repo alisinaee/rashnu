@@ -8,17 +8,21 @@
   </head>
   <body>
     <main class="page">
+      <div class="page-actions">
+        <button class="action-btn" data-action="toggle-language">FA / EN</button>
+        <button class="action-btn" data-action="cycle-theme">Theme: System</button>
+      </div>
       <header class="hero">
         <div class="hero-mark">D</div>
         <div>
           <h1>Dirob</h1>
-          <p>راهنمای استفاده از افزونه مقایسه قیمت بین دیجیکالا و ترب</p>
+          <p data-i18n="heroSubtitle">راهنمای استفاده از افزونه مقایسه قیمت بین دیجیکالا و ترب</p>
         </div>
       </header>
 
       <section class="card">
-        <h2>این افزونه چه کار می‌کند؟</h2>
-        <p>
+        <h2 data-i18n="whatTitle">این افزونه چه کار می‌کند؟</h2>
+        <p data-i18n="whatBody">
           Dirob هنگام مرور صفحات لیست و جزئیات محصول در <strong>دیجیکالا</strong> یا <strong>ترب</strong>، قیمت و نتیجه‌ی
           سایت مقابل را در پنل کناری نمایش می‌دهد تا مقایسه سریع‌تر شود.
         </p>
@@ -26,8 +30,8 @@
 
       <section class="grid">
         <article class="card">
-          <h2>صفحه‌های پشتیبانی‌شده</h2>
-          <ul>
+          <h2 data-i18n="supportedTitle">صفحه‌های پشتیبانی‌شده</h2>
+          <ul data-i18n-html="supportedList">
             <li>صفحات لیست و جست‌وجوی دیجیکالا</li>
             <li>صفحات جزئیات محصول دیجیکالا</li>
             <li>صفحات لیست و جست‌وجوی ترب</li>
@@ -36,8 +40,8 @@
         </article>
 
         <article class="card">
-          <h2>ویژگی‌ها</h2>
-          <ul>
+          <h2 data-i18n="featuresTitle">ویژگی‌ها</h2>
+          <ul data-i18n-html="featuresList">
             <li>مقایسه قیمت بین دو سایت</li>
             <li>شماره‌گذاری راهنما روی صفحه و داخل پنل</li>
             <li>پرش از پنل به محصول روی صفحه و برعکس</li>
@@ -48,8 +52,8 @@
       </section>
 
       <section class="card">
-        <h2>تنظیمات</h2>
-        <ul>
+        <h2 data-i18n="settingsTitle">تنظیمات</h2>
+        <ul data-i18n-html="settingsList">
           <li><strong>انتخاب عنصر</strong>: فقط محصولی که روی آن hover یا focus می‌شود بررسی و نمایش داده می‌شود.</li>
           <li><strong>همگام با دید صفحه</strong>: پنل سعی می‌کند آیتمی را برجسته کند که کاربر واقعاً در صفحه می‌بیند.</li>
           <li><strong>نمای مینیمال</strong>: کارت‌ها فشرده‌تر می‌شوند و دکمه‌های هر آیتم به حالت آیکونی درمی‌آیند.</li>
@@ -62,8 +66,8 @@
       </section>
 
       <section class="card">
-        <h2>کار با راهنما و انتخاب آیتم</h2>
-        <ul>
+        <h2 data-i18n="guideTitle">کار با راهنما و انتخاب آیتم</h2>
+        <ul data-i18n-html="guideList">
           <li>با کلیک روی دکمه‌ی مکان‌یاب هر کارت، صفحه به همان محصول اسکرول می‌شود و هایلایت می‌گردد.</li>
           <li>با hover روی شماره راهنمای روی سایت، آیتم متناظر در پنل برجسته می‌شود.</li>
           <li>با کلیک روی شماره راهنما، پنل به همان آیتم اسکرول می‌کند.</li>
@@ -71,23 +75,23 @@
       </section>
 
       <section class="card">
-        <h2>ثبت لاگ محلی</h2>
-        <p>
+        <h2 data-i18n="loggingTitle">ثبت لاگ محلی</h2>
+        <p data-i18n="loggingBody1">
           برای توسعه، Dirob از helper محلی استفاده می‌کند و لاگ‌ها را در مسیر زیر می‌نویسد:
         </p>
         <pre>research/artifacts/dirob/dirob-live-log.ndjson
 research/artifacts/dirob/dirob-state.json</pre>
-        <p>
+        <p data-i18n="loggingBody2">
           اگر helper فعال نباشد، افزونه همچنان کار می‌کند ولی لاگ فایل‌ها به‌روزرسانی نمی‌شوند.
         </p>
       </section>
 
       <section class="card">
-        <h2>مجوز و سازنده</h2>
-        <p>
+        <h2 data-i18n="licenseTitle">مجوز و سازنده</h2>
+        <p data-i18n="licenseBody1">
           این پروژه با مجوز <strong>MIT</strong> منتشر می‌شود.
         </p>
-        <p>
+        <p data-i18n="licenseBody2">
           Creator & Copyright: <strong>Ali Sinaee</strong>
         </p>
         <ul>
@@ -96,5 +100,6 @@ research/artifacts/dirob/dirob-state.json</pre>
         </ul>
       </section>
     </main>
+    <script src="help.js"></script>
   </body>
 </html>

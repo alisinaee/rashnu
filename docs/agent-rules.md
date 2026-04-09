@@ -26,8 +26,15 @@
 - Ensure compact item action icons use site-aware symbols (D/T, search+D/T, Google) with non-heavy reload iconography.
 - Ensure size scale range remains constrained to -5 through +5.
 - Ensure logger setup supports one-time autostart installation so users avoid per-session manual helper launch.
+- Ensure compact action icons remain slightly larger for readability, and normal list/grid cards compress subtitle/metrics into one-row chips.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T10:44:05+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
+- Summary: Increased compact action icon sizing for better readability and replaced normal-mode subtitle/meta text lines with a single-row chip strip (target/confidence/retries) to save vertical space in both list and grid cards.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:d5de93f56de9 -->
+
 ### 2026-04-09T10:41:09+03:30
 - Changed files: `run-dirob-helper`, `src/panel/panel.js`, `README.md`
 - Summary: Added helper lifecycle commands (`--install-autostart`, `--uninstall-autostart`, `--status`) backed by a macOS LaunchAgent for persistent logger startup, and updated panel/README guidance to prefer one-time autostart setup over repeated manual runs.
@@ -142,11 +149,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:9f23586b9de6 -->
 
-### 2026-04-09T09:26:55+03:30
-- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
-- Summary: Reworked grid cards to use compact inline actions, removed overlapping corner tools in grid mode, reduced grid thumbnail footprint, and hide thumbnails in minimal grid so item content stays visible in both normal and minimal grid views.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:151bc41a0dc9 -->
-
 ## Last Updated
-- 2026-04-09T10:41:09+03:30
+- 2026-04-09T10:44:05+03:30

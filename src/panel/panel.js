@@ -92,6 +92,8 @@
       originalPrice: "قبل از تخفیف",
       discount: "تخفیف",
       confidence: "اعتماد: {value}",
+      confidenceChip: "اعتماد {value}",
+      retriesChip: "تلاش {value}",
       sellers: "فروشنده: {value}",
       openTarget: "باز کردن {site}",
       searchTarget: "جست‌وجوی {site}",
@@ -197,6 +199,8 @@
       originalPrice: "Before Discount",
       discount: "Discount",
       confidence: "Confidence: {value}",
+      confidenceChip: "Confidence {value}",
+      retriesChip: "Retries {value}",
       sellers: "Sellers: {value}",
       openTarget: "Open {site}",
       searchTarget: "Search {site}",
@@ -757,6 +761,27 @@
       state?.debugEnabled && match?.debug
         ? `<div class="debug-box">${escapeHtml(JSON.stringify(match.debug, null, 2))}</div>`
         : "";
+    const chips = [];
+    if (targetTitle) {
+      chips.push(
+        `<span class="item-info-chip item-info-chip--target" data-role="item-subtitle-chip" title="${escapeHtml(
+          targetTitle
+        )}" aria-label="${escapeHtml(targetTitle)}">${escapeHtml(targetTitle)}</span>`
+      );
+    }
+    chips.push(
+      `<span class="item-info-chip item-info-chip--metric" data-role="item-confidence-chip">${escapeHtml(
+        t(language, "confidenceChip", { value: confidence })
+      )}</span>`
+    );
+    if (entry?.retryCountMatch) {
+      chips.push(
+        `<span class="item-info-chip item-info-chip--metric" data-role="item-retries-chip">${escapeHtml(
+          t(language, "retriesChip", { value: `${entry.retryCountMatch}/3` })
+        )}</span>`
+      );
+    }
+    const infoChipsMarkup = `<div class="item-info-chips" data-role="item-info-chips">${chips.join("")}</div>`;
     const statusTooltip = `${t(language, `status_${status}`)} · ${
       translation[`statusHint_${status}`] || translation.statusHint_default
     }`;
@@ -813,10 +838,7 @@
               <span class="status-chip ${escapeHtml(status)}" data-role="status-chip" title="${escapeHtml(statusTooltip)}" aria-label="${escapeHtml(statusTooltip)}">${escapeHtml(t(language, `status_${status}`))}</span>
             </div>
             <h2 class="item-title" data-role="item-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h2>
-            <p class="item-subtitle" data-role="item-subtitle">${escapeHtml(targetTitle)}</p>
-            <p class="item-meta" data-role="item-meta">${escapeHtml(t(language, "confidence", { value: confidence }))}${
-      match?.sellerCount ? ` · ${escapeHtml(t(language, "sellers", { value: match.sellerCount }))}` : ""
-    }${entry?.retryCountMatch ? ` · ${escapeHtml(t(language, "retries", { value: `${entry.retryCountMatch}/3` }))}` : ""}</p>
+            ${infoChipsMarkup}
           </div>
         </div>
 

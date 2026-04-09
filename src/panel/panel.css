@@ -68,6 +68,10 @@ body {
   background: linear-gradient(180deg, #edf2f8 0%, #e3eaf4 100%);
 }
 
+html[lang="fa"] body {
+  font-family: "Vazir", "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
+}
+
 .panel-shell {
   display: flex;
   height: 100vh;

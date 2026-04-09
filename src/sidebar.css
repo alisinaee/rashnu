@@ -7,7 +7,7 @@
   max-height: calc(100vh - 32px);
   z-index: 2147483646;
   direction: rtl;
-  font-family: Tahoma, "Segoe UI", sans-serif;
+  font-family: "Vazir", "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
 }
 
 #dirob-root .dirob-shell {

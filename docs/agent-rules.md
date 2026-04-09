@@ -29,8 +29,15 @@
 - Ensure compact action icons remain slightly larger for readability, and normal list/grid cards compress subtitle/metrics into one-row chips.
 - Ensure search-on-site and reload icons stay visually larger/heavier than default compact icon sizing.
 - Ensure confidence is displayed adjacent to status in the top meta row across all layouts, and remove long subtitle chips below titles.
+- Ensure Persian UI text uses Vazir-family typography across panel/help/popup/sidebar surfaces.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T10:55:33+03:30
+- Changed files: `src/panel/panel.css`, `src/help/help.css`, `src/sidebar.css`, `src/popup/popup.html`
+- Summary: Added Persian-language font overrides to use the Vazir family stack (`Vazir`, `Vazirmatn`, fallbacks) while preserving the existing English font stack.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:aa9bf96f491f -->
+
 ### 2026-04-09T10:51:14+03:30
 - Changed files: `src/panel/panel.js`, `src/panel/panel.css`
 - Summary: Removed the long subtitle chip below item titles and moved confidence (plus retries when available) into compact chips beside status in the meta row for list/grid and minimal/normal views.
@@ -145,11 +152,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:4b95bf2d2f31 -->
 
-### 2026-04-09T09:40:31+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Made switch thumb direction locale-invariant (no RTL/LTR flip) and improved light-theme contrast for switches, active controls, hover states, and logger status badges.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:e2c9f33fefef -->
-
 ## Last Updated
-- 2026-04-09T10:51:14+03:30
+- 2026-04-09T10:55:33+03:30

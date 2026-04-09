@@ -29,6 +29,10 @@ body {
   font: 14px/1.8 "SF Pro Display", "Segoe UI", Tahoma, sans-serif;
 }
 
+html[lang="fa"] body {
+  font-family: "Vazir", "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
+}
+
 :root[data-theme="light"] body {
   background: radial-gradient(circle at top, #f7f8fb 0%, #edf1f6 52%);
 }

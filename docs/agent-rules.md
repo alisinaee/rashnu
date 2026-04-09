@@ -22,8 +22,16 @@
 - Ensure in RTL the reload for each element should be on top right.
 - Ensure icon-first controls expose localized hover titles and aria labels based on selected language.
 - Ensure font scale affects list/item content only and must not resize header/settings sections.
+- Ensure settings tooltips explain feature behavior (not just label text), and guide/status chips must expose explanatory tooltips.
+- Ensure compact item action icons use site-aware symbols (D/T, search+D/T, Google) with non-heavy reload iconography.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T10:35:44+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`, `src/panel/panel.html`
+- Summary: Expanded localized tooltip/ARIA coverage with detailed behavior descriptions for top controls and settings toggles, added tooltip explanations for guide numbers and status chips, and redesigned compact action icons to use site-aware marks (D/T, search+D/T, Google, locate, lighter reload symbol).
+- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
+<!-- fingerprint:7bc31b5b1f14 -->
+
 ### 2026-04-09T10:27:26+03:30
 - Changed files: `src/panel/panel.js`, `src/panel/panel.css`
 - Summary: Scoped size scaling to item list typography by introducing `--items-font-size`, removed scale coupling from global panel text, and converted item/list text styles to `em` so item titles/meta/prices/actions scale consistently with size controls.
@@ -138,11 +146,5 @@
 - Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
 <!-- fingerprint:a8bf5956db01 -->
 
-### 2026-04-08T22:11:02+03:30
-- Changed files: `src/panel/panel.css`, `src/panel/panel.js`
-- Summary: Reworked panel scaling away from transform-based layout inflation, constrained grid to stable columns, removed card minimum-height forcing, and forced rebuild follow-up refreshes when switching minimal/layout modes.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:bfe827b11b82 -->
-
 ## Last Updated
-- 2026-04-09T10:27:26+03:30
+- 2026-04-09T10:35:44+03:30

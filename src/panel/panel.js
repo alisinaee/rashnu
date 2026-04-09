@@ -51,12 +51,17 @@
         "حالت انتخاب عنصر روشن است: فقط محصولی که روی آن می‌روید یا فوکوس می‌کنید نمایش داده می‌شود.",
       logsMeta: "تعداد لاگ‌ها: {count}",
       clearLogs: "پاک کردن",
+      clearLogsHint: "پاک کردن لاگ‌های ثبت‌شده در همین جلسه از پنل.",
       reloadAll: "بارگذاری دوباره همه",
+      reloadAllHint: "بارگذاری دوباره همه آیتم‌های پنل از صفحه فعلی.",
       sizeMeta: "اندازه: {value}",
       settingsTitle: "تنظیمات",
       settingsClose: "بستن",
       settingsOpen: "تنظیمات",
+      settingsOpenHint: "باز کردن تنظیمات Dirob.",
+      settingsCloseHint: "بستن پنل تنظیمات Dirob.",
       help: "راهنما",
+      helpHint: "باز کردن صفحه راهنمای Dirob.",
       theme: "تم",
       theme_system: "خودکار",
       theme_dark: "تیره",
@@ -91,7 +96,7 @@
       openTarget: "باز کردن {site}",
       searchTarget: "جست‌وجوی {site}",
       google: "جست‌وجوی گوگل",
-      reloadItem: "↻",
+      reloadItem: "⟳",
       status_loading: "در حال جست‌وجو",
       status_matched: "تطابق خوب",
       status_low_confidence: "نیاز به بررسی",
@@ -103,7 +108,9 @@
       listingHint: "این صفحه فهرست محصولات است و موارد قابل مشاهده بررسی می‌شوند.",
       langButton: "FA / EN",
       switchLanguage: "تغییر زبان",
+      switchLanguageHint: "تغییر زبان پنل بین فارسی و انگلیسی.",
       cycleTheme: "تغییر تم",
+      cycleThemeHint: "تغییر تم بین خودکار، تیره و روشن.",
       autoLogsOn: "لاگ خودکار روشن",
       autoLogsOff: "لاگ خودکار خاموش",
       logHelperConnected: "ثبت لاگ محلی وصل است",
@@ -111,9 +118,34 @@
       logPathReady: "لاگ‌ها در {path} ذخیره می‌شوند.",
       logPathDisconnected: "برای ذخیره لاگ‌ها `./run-dirob-helper` را در ریشه پروژه اجرا کنید.",
       locateItem: "رفتن به محصول",
+      locateItemHint: "رفتن به همین محصول در صفحه اصلی و هایلایت کردن آن.",
       decreaseSize: "کوچک‌تر کردن اندازه",
+      decreaseSizeHint: "کوچک‌تر کردن اندازه آیتم‌ها و متن‌های داخل لیست محصولات.",
       increaseSize: "بزرگ‌تر کردن اندازه",
-      openRepository: "باز کردن گیت‌هاب Dirob"
+      increaseSizeHint: "بزرگ‌تر کردن اندازه آیتم‌ها و متن‌های داخل لیست محصولات.",
+      openRepository: "باز کردن گیت‌هاب Dirob",
+      elementSelectHint:
+        "وقتی روشن باشد فقط محصولی که روی آن hover یا focus می‌کنید در پنل بررسی و نمایش داده می‌شود.",
+      syncPageViewHint:
+        "وقتی روشن باشد پنل با اسکرول صفحه همگام می‌شود و روی آیتم قابل مشاهده تمرکز می‌کند.",
+      minimalViewHint:
+        "کارت‌ها فشرده می‌شوند و دکمه‌های هر آیتم به حالت آیکونی نمایش داده می‌شود تا فضای کمتری بگیرد.",
+      guideNumbersHint:
+        "شماره راهنما کنار محصولات روی صفحه و داخل پنل نمایش داده می‌شود تا تطبیق آیتم‌ها ساده باشد.",
+      autoLogsHint: "وقایع توسعه Dirob به لاگ محلی ارسال می‌شود.",
+      debugHint: "اطلاعات تشخیصی بیشتری برای هر آیتم نمایش داده می‌شود.",
+      layoutListHint: "نمایش نتایج به‌صورت لیست تک‌ستونی.",
+      layoutGridHint: "نمایش نتایج به‌صورت گرید چندستونی.",
+      guideNumberHint: "شماره راهنما #{number}؛ همین شماره کنار همان محصول در صفحه هم نمایش داده می‌شود.",
+      statusHint_loading: "در حال جست‌وجوی نتیجه در سایت مقابل است.",
+      statusHint_matched: "نتیجه‌ای با تطابق خوب پیدا شده است.",
+      statusHint_low_confidence: "نتیجه پیدا شده اما دقت آن پایین است و باید بررسی شود.",
+      statusHint_not_found: "برای این آیتم تطابق قابل‌اتکا پیدا نشد.",
+      statusHint_error: "در دریافت یا پردازش نتیجه خطا رخ داده است.",
+      statusHint_default: "وضعیت نتیجه این آیتم.",
+      openTargetHint: "باز کردن صفحه محصول در {site}.",
+      searchTargetHint: "جست‌وجوی این عنوان در {site}.",
+      googleHint: "جست‌وجوی این عنوان در گوگل."
     },
     en: {
       pageWaiting: "Waiting for a supported page...",
@@ -124,12 +156,17 @@
         "Element select mode is on: only the product under hover/focus is shown.",
       logsMeta: "Logs: {count}",
       clearLogs: "Clear",
+      clearLogsHint: "Clear logs captured in this panel session.",
       reloadAll: "Reload All",
+      reloadAllHint: "Reload all panel items from the current page.",
       sizeMeta: "Size: {value}",
       settingsTitle: "Settings",
       settingsClose: "Close",
       settingsOpen: "Settings",
+      settingsOpenHint: "Open Dirob settings.",
+      settingsCloseHint: "Close Dirob settings.",
       help: "Help",
+      helpHint: "Open the Dirob guide page.",
       theme: "Theme",
       theme_system: "System",
       theme_dark: "Dark",
@@ -163,7 +200,7 @@
       openTarget: "Open {site}",
       searchTarget: "Search {site}",
       google: "Google",
-      reloadItem: "↻",
+      reloadItem: "⟳",
       status_loading: "Loading",
       status_matched: "Matched",
       status_low_confidence: "Review",
@@ -175,7 +212,9 @@
       listingHint: "This is a listing page. Dirob is checking visible products.",
       langButton: "EN / FA",
       switchLanguage: "Switch language",
+      switchLanguageHint: "Switch panel language between English and Persian.",
       cycleTheme: "Cycle theme",
+      cycleThemeHint: "Cycle theme mode between System, Dark, and Light.",
       autoLogsOn: "Auto logs on",
       autoLogsOff: "Auto logs off",
       logHelperConnected: "Local logger connected",
@@ -183,9 +222,34 @@
       logPathReady: "Logs are written to {path}.",
       logPathDisconnected: "Run `./run-dirob-helper` in the project root to save logs.",
       locateItem: "Locate item",
+      locateItemHint: "Scroll to this product on the real page and highlight it.",
       decreaseSize: "Decrease size",
+      decreaseSizeHint: "Decrease list item/card sizing, including item text.",
       increaseSize: "Increase size",
-      openRepository: "Open Dirob GitHub repository"
+      increaseSizeHint: "Increase list item/card sizing, including item text.",
+      openRepository: "Open Dirob GitHub repository",
+      elementSelectHint:
+        "When enabled, only the currently hovered/focused product is inspected and shown in the panel.",
+      syncPageViewHint:
+        "When enabled, panel focus follows the product currently visible on the real page.",
+      minimalViewHint:
+        "Compacts cards and switches per-item actions to icon buttons to save vertical space.",
+      guideNumbersHint:
+        "Shows matching guide numbers on the page and in the panel so items are easier to correlate.",
+      autoLogsHint: "Send Dirob development events to local logs.",
+      debugHint: "Show extra diagnostic details for each item.",
+      layoutListHint: "Show results in a single-column list layout.",
+      layoutGridHint: "Show results in a multi-column grid layout.",
+      guideNumberHint: "Guide number #{number}; the same number is shown on the matching product on page.",
+      statusHint_loading: "Dirob is still searching the opposite site.",
+      statusHint_matched: "A strong match was found.",
+      statusHint_low_confidence: "A match was found but confidence is low.",
+      statusHint_not_found: "No reliable match was found for this item.",
+      statusHint_error: "An error occurred while fetching or processing this item.",
+      statusHint_default: "Current matching state for this item.",
+      openTargetHint: "Open the product page on {site}.",
+      searchTargetHint: "Search this title on {site}.",
+      googleHint: "Search this title on Google."
     }
   };
 
@@ -458,20 +522,20 @@
     document.body.style.setProperty("--tool-radius", `${clamp(10 + fontScale, 8, 14)}px`);
 
     settingsTitle.textContent = translation.settingsTitle;
-    setTitleAndAria(reloadAllButton, translation.reloadAll);
+    setTitleAndAria(reloadAllButton, translation.reloadAllHint);
     setTitleAndAria(
       toggleSettingsButton,
-      Boolean(state?.settingsOpen) ? translation.settingsClose : translation.settingsOpen
+      Boolean(state?.settingsOpen) ? translation.settingsCloseHint : translation.settingsOpenHint
     );
-    setTitleAndAria(helpButton, translation.help);
-    setTitleAndAria(closeSettingsButton, translation.settingsClose);
+    setTitleAndAria(helpButton, translation.helpHint);
+    setTitleAndAria(closeSettingsButton, translation.settingsCloseHint);
     setTitleAndAria(brandLink, translation.openRepository);
     languageButton.textContent = "A";
-    setTitleAndAria(languageButton, translation.switchLanguage);
+    setTitleAndAria(languageButton, translation.switchLanguageHint);
     const nextThemeMode = state?.themeMode || "system";
     const themeModeLabel = translation[`theme_${nextThemeMode}`] || translation.theme_system;
     themeButton.textContent = themeIconFor(nextThemeMode);
-    setTitleAndAria(themeButton, `${translation.cycleTheme}: ${translation.theme} ${themeModeLabel}`);
+    setTitleAndAria(themeButton, `${translation.cycleThemeHint} (${translation.theme}: ${themeModeLabel})`);
     switchLabels.selection.textContent = translation.elementSelect;
     switchLabels.syncPageView.textContent = translation.syncPageView;
     switchLabels.minimalView.textContent = translation.minimalView;
@@ -482,17 +546,17 @@
     fontLabel.textContent = translation.fontSize;
     layoutListButton.textContent = translation.layoutList;
     layoutGridButton.textContent = translation.layoutGrid;
-    setTitleAndAria(selectionButton, translation.elementSelect);
-    setTitleAndAria(syncPageViewButton, translation.syncPageView);
-    setTitleAndAria(minimalViewButton, translation.minimalView);
-    setTitleAndAria(guideNumbersButton, translation.guideNumbers);
-    setTitleAndAria(autoLogsButton, translation.autoLogs);
-    setTitleAndAria(debugButton, translation.debug);
-    setTitleAndAria(layoutListButton, translation.layoutList);
-    setTitleAndAria(layoutGridButton, translation.layoutGrid);
-    setTitleAndAria(fontDownButton, translation.decreaseSize);
-    setTitleAndAria(fontUpButton, translation.increaseSize);
-    setTitleAndAria(clearLogsButton, translation.clearLogs);
+    setTitleAndAria(selectionButton, translation.elementSelectHint);
+    setTitleAndAria(syncPageViewButton, translation.syncPageViewHint);
+    setTitleAndAria(minimalViewButton, translation.minimalViewHint);
+    setTitleAndAria(guideNumbersButton, translation.guideNumbersHint);
+    setTitleAndAria(autoLogsButton, translation.autoLogsHint);
+    setTitleAndAria(debugButton, translation.debugHint);
+    setTitleAndAria(layoutListButton, translation.layoutListHint);
+    setTitleAndAria(layoutGridButton, translation.layoutGridHint);
+    setTitleAndAria(fontDownButton, translation.decreaseSizeHint);
+    setTitleAndAria(fontUpButton, translation.increaseSizeHint);
+    setTitleAndAria(clearLogsButton, translation.clearLogsHint);
     toggleSettingsButton.classList.toggle("is-active", Boolean(state?.settingsOpen));
     clearLogsButton.textContent = translation.clearLogs;
 
@@ -669,6 +733,7 @@
         ? globalThis.DirobNormalize.buildTorobSearchUrl(item.title)
         : globalThis.DirobNormalize.buildDigikalaSearchUrl(item.title));
     const targetUrl = match?.targetUrl || targetSearchUrl;
+    const targetSiteMark = siteMarkFor(targetSite);
     const minimalViewEnabled = Boolean(state?.minimalViewEnabled);
     const isGridLayout = state?.layoutMode === "grid";
     const useCompactActions = minimalViewEnabled || isGridLayout;
@@ -690,14 +755,34 @@
       state?.debugEnabled && match?.debug
         ? `<div class="debug-box">${escapeHtml(JSON.stringify(match.debug, null, 2))}</div>`
         : "";
+    const statusTooltip = `${t(language, `status_${status}`)} · ${
+      translation[`statusHint_${status}`] || translation.statusHint_default
+    }`;
+    const guideTooltip =
+      guideNumber != null
+        ? t(language, "guideNumberHint", {
+            number: guideNumber
+          })
+        : "";
 
     const actionMarkup = useCompactActions
       ? `
         <div class="item-actions item-actions--minimal">
-          <a class="action-button action-button--icon" data-role="open-target" href="${escapeHtml(targetUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t(language, "openTarget", { site: targetLabel }))}" aria-label="${escapeHtml(t(language, "openTarget", { site: targetLabel }))}">↗</a>
-          <a class="action-button action-button--icon" data-role="search-target" href="${escapeHtml(targetSearchUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t(language, "searchTarget", { site: targetLabel }))}" aria-label="${escapeHtml(t(language, "searchTarget", { site: targetLabel }))}">⌕</a>
-          <button class="action-button action-button--icon" type="button" data-item-action="locate-item" data-role="locate-button-inline" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItem)}" aria-label="${escapeHtml(translation.locateItem)}">⌖</button>
-          <button class="action-button action-button--icon" type="button" data-item-action="reload-item" data-role="reload-button-inline" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAll)}" aria-label="${escapeHtml(translation.reloadAll)}">↻</button>
+          <a class="action-button action-button--icon" data-role="open-target" href="${escapeHtml(targetUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t(language, "openTargetHint", { site: targetLabel }))}" aria-label="${escapeHtml(t(language, "openTargetHint", { site: targetLabel }))}">
+            <span class="action-icon action-icon--site" aria-hidden="true">${escapeHtml(targetSiteMark)}</span>
+          </a>
+          <a class="action-button action-button--icon" data-role="search-target" href="${escapeHtml(targetSearchUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t(language, "searchTargetHint", { site: targetLabel }))}" aria-label="${escapeHtml(t(language, "searchTargetHint", { site: targetLabel }))}">
+            <span class="action-icon action-icon--search" aria-hidden="true"><span class="action-icon__search">⌕</span><span class="action-icon__site">${escapeHtml(targetSiteMark)}</span></span>
+          </a>
+          <a class="action-button action-button--icon" data-role="google-link" href="${escapeHtml(googleUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(translation.googleHint)}" aria-label="${escapeHtml(translation.googleHint)}">
+            <span class="action-icon action-icon--google" aria-hidden="true">G</span>
+          </a>
+          <button class="action-button action-button--icon" type="button" data-item-action="locate-item" data-role="locate-button-inline" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItemHint)}" aria-label="${escapeHtml(translation.locateItemHint)}">
+            <span class="action-icon action-icon--locate" aria-hidden="true">◎</span>
+          </button>
+          <button class="action-button action-button--icon" type="button" data-item-action="reload-item" data-role="reload-button-inline" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAllHint)}" aria-label="${escapeHtml(translation.reloadAllHint)}">
+            <span class="action-icon action-icon--reload" aria-hidden="true">⟳</span>
+          </button>
         </div>`
       : `
         <div class="item-actions">
@@ -711,8 +796,8 @@
         ${
           showCornerTools
             ? `<div class="item-tools">
-          <button class="icon-button item-tool" data-item-action="reload-item" data-role="reload-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAll)}" aria-label="${escapeHtml(translation.reloadAll)}">${escapeHtml(t(language, "reloadItem"))}</button>
-          <button class="icon-button item-tool" data-item-action="locate-item" data-role="locate-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItem)}" aria-label="${escapeHtml(translation.locateItem)}">⌖</button>
+          <button class="icon-button item-tool" data-item-action="reload-item" data-role="reload-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAllHint)}" aria-label="${escapeHtml(translation.reloadAllHint)}">${escapeHtml(t(language, "reloadItem"))}</button>
+          <button class="icon-button item-tool" data-item-action="locate-item" data-role="locate-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItemHint)}" aria-label="${escapeHtml(translation.locateItemHint)}">◎</button>
         </div>`
             : ""
         }
@@ -722,8 +807,8 @@
           </div>
           <div class="item-body">
             <div class="meta-row">
-              ${guideNumber != null ? `<span class="guide-chip" data-role="guide-number">#${escapeHtml(String(guideNumber))}</span>` : `<span class="guide-chip is-empty" data-role="guide-number"></span>`}
-              <span class="status-chip ${escapeHtml(status)}" data-role="status-chip">${escapeHtml(t(language, `status_${status}`))}</span>
+              ${guideNumber != null ? `<span class="guide-chip" data-role="guide-number" title="${escapeHtml(guideTooltip)}" aria-label="${escapeHtml(guideTooltip)}">#${escapeHtml(String(guideNumber))}</span>` : `<span class="guide-chip is-empty" data-role="guide-number"></span>`}
+              <span class="status-chip ${escapeHtml(status)}" data-role="status-chip" title="${escapeHtml(statusTooltip)}" aria-label="${escapeHtml(statusTooltip)}">${escapeHtml(t(language, `status_${status}`))}</span>
             </div>
             <h2 class="item-title" data-role="item-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h2>
             <p class="item-subtitle" data-role="item-subtitle">${escapeHtml(targetTitle)}</p>
@@ -1044,6 +1129,16 @@
       return isEnglish ? "Torob" : "ترب";
     }
     return isEnglish ? "Unknown" : "نامشخص";
+  }
+
+  function siteMarkFor(site) {
+    if (site === "digikala") {
+      return "D";
+    }
+    if (site === "torob") {
+      return "T";
+    }
+    return "?";
   }
 
   function getEffectiveTheme(themeMode) {

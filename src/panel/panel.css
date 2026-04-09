@@ -576,9 +576,9 @@ html[dir="ltr"] .brand-block > div {
 }
 
 .list.is-grid .action-button--icon {
-  width: 30px;
-  min-width: 30px;
-  height: 30px;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
 }
 
 .list.is-grid.is-minimal .thumb {
@@ -663,9 +663,9 @@ html[dir="ltr"] .brand-block > div {
 }
 
 .list.is-minimal .action-button--icon {
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
   padding: 0;
   justify-content: center;
 }
@@ -727,7 +727,8 @@ html[dir="ltr"] .brand-block > div {
   width: var(--tool-size);
   height: var(--tool-size);
   border-radius: var(--tool-radius);
-  font-size: 0.98em;
+  font-size: 0.92em;
+  font-weight: 600;
 }
 
 .guide-chip {
@@ -743,6 +744,7 @@ html[dir="ltr"] .brand-block > div {
   color: #ffcfac;
   font-size: 0.79em;
   font-weight: 700;
+  cursor: help;
 }
 
 .guide-chip.is-empty {
@@ -853,6 +855,7 @@ html[dir="ltr"] .brand-block > div {
   border-radius: 999px;
   font-size: 0.79em;
   font-weight: 700;
+  cursor: help;
   transition: background-color 160ms ease, color 160ms ease, opacity 160ms ease;
 }
 
@@ -979,11 +982,55 @@ html[dir="ltr"] .brand-block > div {
 }
 
 .action-button--icon {
-  width: 34px;
-  min-width: 34px;
+  width: 36px;
+  min-width: 36px;
   height: 34px;
   padding: 0;
-  font-size: 1.03em;
+  font-size: 0.98em;
+}
+
+.action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.action-icon--site {
+  font-size: 0.95em;
+}
+
+.action-icon--search {
+  gap: 1px;
+}
+
+.action-icon__search {
+  font-size: 0.93em;
+}
+
+.action-icon__site {
+  font-size: 0.66em;
+  transform: translateY(1px);
+}
+
+.action-icon--google {
+  font-size: 0.92em;
+  font-weight: 800;
+  color: #4f8eff;
+}
+
+:root[data-theme="light"] .action-icon--google {
+  color: #1a73e8;
+}
+
+.action-icon--locate {
+  font-size: 0.95em;
+}
+
+.action-icon--reload {
+  font-size: 0.98em;
 }
 
 :root[data-theme="light"] .status-chip.loading {

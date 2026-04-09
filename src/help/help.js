@@ -3,11 +3,15 @@
 
   const languageButton = document.querySelector('[data-action="toggle-language"]');
   const themeButton = document.querySelector('[data-action="cycle-theme"]');
+  const heroBrandLink = document.querySelector('[data-role="hero-brand-link"]');
   const themeOrder = ["system", "dark", "light"];
   const translations = {
     fa: {
       languageButton: "FA / EN",
       themeLabel: "تم",
+      switchLanguage: "تغییر زبان",
+      cycleTheme: "تغییر تم",
+      openRepository: "باز کردن گیت‌هاب Dirob",
       heroSubtitle: "راهنمای استفاده از افزونه مقایسه قیمت بین دیجیکالا و ترب",
       whatTitle: "این افزونه چه کار می‌کند؟",
       whatBody: "Dirob هنگام مرور صفحات لیست و جزئیات محصول در <strong>دیجیکالا</strong> یا <strong>ترب</strong>، قیمت و نتیجه‌ی سایت مقابل را در پنل کناری نمایش می‌دهد تا مقایسه سریع‌تر شود.",
@@ -29,6 +33,9 @@
     en: {
       languageButton: "EN / FA",
       themeLabel: "Theme",
+      switchLanguage: "Switch language",
+      cycleTheme: "Cycle theme",
+      openRepository: "Open Dirob GitHub repository",
       heroSubtitle: "Guide to using the Digikala and Torob comparison extension",
       whatTitle: "What does this extension do?",
       whatBody: "Dirob watches listing and product-detail pages on <strong>Digikala</strong> and <strong>Torob</strong> and shows the price/result from the opposite site in the side panel for faster comparison.",
@@ -76,6 +83,8 @@
     document.documentElement.lang = language;
     document.documentElement.dir = language === "fa" ? "rtl" : "ltr";
     languageButton.textContent = translations[language].languageButton;
+    setTitleAndAria(languageButton, translations[language].switchLanguage);
+    setTitleAndAria(heroBrandLink, translations[language].openRepository);
     document.querySelectorAll("[data-i18n]").forEach((node) => {
       const key = node.getAttribute("data-i18n");
       if (key && translations[language][key]) {
@@ -107,5 +116,17 @@
         ? { system: "System", dark: "Dark", light: "Light" }[themeMode]
         : { system: "خودکار", dark: "تیره", light: "روشن" }[themeMode];
     themeButton.textContent = `${translations[language].themeLabel}: ${modeLabel}`;
+    setTitleAndAria(
+      themeButton,
+      `${translations[language].cycleTheme}: ${translations[language].themeLabel} ${modeLabel}`
+    );
+  }
+
+  function setTitleAndAria(element, text) {
+    if (!element || !text) {
+      return;
+    }
+    element.title = text;
+    element.setAttribute("aria-label", text);
   }
 })();

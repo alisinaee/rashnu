@@ -20,14 +20,115 @@
 - Ensure top reload should work without refreshing the page.
 - Ensure changing lang should not require refreshing.
 - Ensure in RTL the reload for each element should be on top right.
-- Ensure README includes explicit unofficial Chrome install steps (`chrome://extensions`, enable `Developer mode`, and `Load unpacked`).
+- Ensure icon-first controls expose localized hover titles and aria labels based on selected language.
+- Ensure font scale affects list/item content only and must not resize header/settings sections.
+- Ensure settings tooltips explain feature behavior (not just label text), and guide/status chips must expose explanatory tooltips.
+- Ensure compact item action icons use site-aware symbols (D/T, search+D/T, Google) with non-heavy reload iconography.
+- Ensure size scale range remains constrained to -5 through +5.
+- Ensure logger setup supports one-time autostart installation so users avoid per-session manual helper launch.
+- Ensure compact action icons remain slightly larger for readability, and normal list/grid cards compress subtitle/metrics into one-row chips.
+- Ensure search-on-site and reload icons stay visually larger/heavier than default compact icon sizing.
+- Ensure confidence is displayed adjacent to status in the top meta row across all layouts, and remove long subtitle chips below titles.
+- Ensure Persian UI text uses Vazir-family typography across panel/help/popup/sidebar surfaces.
+- Ensure guide-number click navigation adds a visible blink/pulse animation on the focused panel item after scroll.
+- Ensure guide-jump blink starts only after programmatic scroll settles.
+- Ensure guide-jump highlight combines overlay flash with border pulse for clearer focus indication.
+- Ensure README documents explicit manual Chrome load-unpacked steps for GitHub users.
+- Ensure README explicitly describes unofficial extension installation flow (`Developer mode` + `Load unpacked`) for Chrome users.
+- Ensure settings diagnostics text (listing hint, log meta, logger status/path) is visible only when Debug mode is enabled.
+- Ensure auto log capture/persistence is gated by both Debug and Auto Logs being enabled.
+- Ensure Debug mode exposes an export action so users can download and share diagnostic logs.
 
 ## Recent Changes (Last 20)
-### 2026-04-09T11:22:05+03:30
+### 2026-04-09T11:13:18+03:30
 - Changed files: `README.md`
-- Summary: Added a dedicated unofficial/unpacked Chrome installation section with explicit Developer Mode, Load Unpacked, and extension reload steps.
+- Summary: Rewrote install guidance as a dedicated “Install In Chrome (Unofficial / Unpacked)” section with explicit `chrome://extensions` developer-mode steps, load-unpacked flow, and reload instructions.
 - Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:51a6ed1e8d2c -->
+<!-- fingerprint:34a69a4fdc4f -->
+
+### 2026-04-09T11:11:47+03:30
+- Changed files: `src/panel/panel.html`, `src/panel/panel.js`, `src/panel/panel.css`, `src/background.js`
+- Summary: Added a bottom "Export logs" action, hid the entire diagnostics/info block unless Debug is enabled, disabled the Auto Logs toggle while Debug is off, and enforced background log writes to run only when both Debug and Auto Logs are enabled.
+- Behavior impact: Added or refreshed 3 behavior rule(s) from user instructions.
+<!-- fingerprint:b46633e2a343 -->
+
+### 2026-04-09T11:05:10+03:30
+- Changed files: `src/panel/panel.css`, `README.md`
+- Summary: Upgraded guide-jump feedback from border-only blink to combined overlay+border pulse animation, and expanded README with step-by-step manual Chrome installation (`chrome://extensions`, developer mode, load unpacked, reload workflow).
+- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
+<!-- fingerprint:d13c1835b8bf -->
+
+### 2026-04-09T10:59:34+03:30
+- Changed files: `src/panel/panel.js`
+- Summary: Delayed guide-jump blink trigger until programmatic scroll completion by adding a scroll-done callback path in `programmaticScrollTo`.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:e8c35ce46e42 -->
+
+### 2026-04-09T10:57:37+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
+- Summary: Added a guide-jump blink animation path (`is-guide-jump`) triggered when panel focus is requested from website guide-number clicks, including a two-pulse overlay effect for clear target emphasis.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:926ccdad4de7 -->
+
+### 2026-04-09T10:55:33+03:30
+- Changed files: `src/panel/panel.css`, `src/help/help.css`, `src/sidebar.css`, `src/popup/popup.html`
+- Summary: Added Persian-language font overrides to use the Vazir family stack (`Vazir`, `Vazirmatn`, fallbacks) while preserving the existing English font stack.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:aa9bf96f491f -->
+
+### 2026-04-09T10:51:14+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
+- Summary: Removed the long subtitle chip below item titles and moved confidence (plus retries when available) into compact chips beside status in the meta row for list/grid and minimal/normal views.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:a3014510f7fa -->
+
+### 2026-04-09T10:46:57+03:30
+- Changed files: `src/panel/panel.css`
+- Summary: Increased visual weight and size for compact search-target and reload icons (including corner reload tool) to improve legibility in minimal/grid action rows.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:ec5ff8b57b07 -->
+
+### 2026-04-09T10:44:05+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
+- Summary: Increased compact action icon sizing for better readability and replaced normal-mode subtitle/meta text lines with a single-row chip strip (target/confidence/retries) to save vertical space in both list and grid cards.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:d5de93f56de9 -->
+
+### 2026-04-09T10:41:09+03:30
+- Changed files: `run-dirob-helper`, `src/panel/panel.js`, `README.md`
+- Summary: Added helper lifecycle commands (`--install-autostart`, `--uninstall-autostart`, `--status`) backed by a macOS LaunchAgent for persistent logger startup, and updated panel/README guidance to prefer one-time autostart setup over repeated manual runs.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:0ea5ee888cfa -->
+
+### 2026-04-09T10:37:27+03:30
+- Changed files: `src/background.js`
+- Summary: Tightened global font-scale clamp to enforce a hard UI range of `-5..+5` for panel size adjustments.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:e5f9f6b78683 -->
+
+### 2026-04-09T10:35:44+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`, `src/panel/panel.html`
+- Summary: Expanded localized tooltip/ARIA coverage with detailed behavior descriptions for top controls and settings toggles, added tooltip explanations for guide numbers and status chips, and redesigned compact action icons to use site-aware marks (D/T, search+D/T, Google, locate, lighter reload symbol).
+- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
+<!-- fingerprint:7bc31b5b1f14 -->
+
+### 2026-04-09T10:27:26+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
+- Summary: Scoped size scaling to item list typography by introducing `--items-font-size`, removed scale coupling from global panel text, and converted item/list text styles to `em` so item titles/meta/prices/actions scale consistently with size controls.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:3a19f53f37ef -->
+
+### 2026-04-09T10:23:18+03:30
+- Changed files: `src/panel/panel.html`, `src/panel/panel.js`, `src/help/help.html`, `src/help/help.js`
+- Summary: Added centralized localized tooltip/ARIA wiring for panel and help icon controls, including settings toggles/layout/size actions and GitHub brand links, and removed hardcoded English title attributes from markup.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:6ea9f37002c4 -->
+
+### 2026-04-09T10:14:18+03:30
+- Changed files: `src/help/help.html`, `src/help/help.css`
+- Summary: Updated help/guide header so Dirob icon+title open the GitHub repo and added a visible version line (0.0.1 alpha test) under the title while keeping the localized subtitle below.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:9fba763f1626 -->
 
 ### 2026-04-09T10:11:41+03:30
 - Changed files: `src/panel/panel.html`, `src/panel/panel.css`, `src/panel/panel.js`
@@ -59,89 +160,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:44378460f090 -->
 
-### 2026-04-09T09:57:26+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Made the settings section more minimal by shrinking paddings, gaps, control heights, switch size, segmented controls, and paired cards while preserving behavior and responsive layout.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:5f94cc3bf869 -->
-
-### 2026-04-09T09:54:42+03:30
-- Changed files: `src/panel/panel.html`, `src/panel/panel.js`
-- Summary: Removed the header placeholder text 'Waiting for a supported page...' by clearing the initial markup and rendering an empty subtitle when the active page is unsupported.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:60a8dbd43793 -->
-
-### 2026-04-09T09:52:35+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Forced brand header icon placement to always stay on the right of Dirob text by using a fixed row-reverse brand layout, and increased the D badge size for better visual prominence.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:8b83e9dbba7c -->
-
-### 2026-04-09T09:49:25+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Pinned brand header layout so the Dirob icon always stays to the right of title/subtitle in both FA and EN, while preserving language-specific text direction/alignment inside the text block.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:e040e9b9a8c6 -->
-
-### 2026-04-09T09:43:34+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Fixed confusing light-theme switch states (clear gray OFF vs orange ON) while keeping a single active thumb direction across languages, and prevented list/grid card shrink-collapse by making item cards non-shrinking in the scroll list.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:4b95bf2d2f31 -->
-
-### 2026-04-09T09:40:31+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Made switch thumb direction locale-invariant (no RTL/LTR flip) and improved light-theme contrast for switches, active controls, hover states, and logger status badges.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:e2c9f33fefef -->
-
-### 2026-04-09T09:35:21+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Hardened grid layout against clipped/overlapping cards by using max-content implicit rows, max-content grid cards, and non-shrinking direct children so each product card keeps full vertical content.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:956714b29c61 -->
-
-### 2026-04-09T09:33:02+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Fixed grid-card vertical overlap by forcing content-sized implicit rows and content-sized grid cards so full item blocks render without clipping in side panel grid mode.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:9f23586b9de6 -->
-
-### 2026-04-09T09:26:55+03:30
-- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
-- Summary: Reworked grid cards to use compact inline actions, removed overlapping corner tools in grid mode, reduced grid thumbnail footprint, and hide thumbnails in minimal grid so item content stays visible in both normal and minimal grid views.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:151bc41a0dc9 -->
-
-### 2026-04-09T09:20:03+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Removed panel item-title clamping and freed minimal-mode header width so list cards can show full product names in both normal and minimal views.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:823d176d77e2 -->
-
-### 2026-04-08T22:23:15+03:30
-- Changed files: `src/panel/panel.js`, `src/panel/panel.css`, `src/help/help.css`
-- Summary: Replaced layout-breaking panel zoom with variable-based sizing, made grid responsive, forced deterministic list/grid/minimal class switching, improved top refresh rebuild behavior, fixed card tool placement, and hardened help-page light-theme readability.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:a8bf5956db01 -->
-
-### 2026-04-08T22:11:02+03:30
-- Changed files: `src/panel/panel.css`, `src/panel/panel.js`
-- Summary: Reworked panel scaling away from transform-based layout inflation, constrained grid to stable columns, removed card minimum-height forcing, and forced rebuild follow-up refreshes when switching minimal/layout modes.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:bfe827b11b82 -->
-
-### 2026-04-08T22:06:17+03:30
-- Changed files: `src/panel/panel.js`, `src/panel/panel.css`, `src/help/help.css`
-- Summary: Improved light-theme contrast for the help page and panel hover states, forced top refresh to rebuild panel state with delayed follow-up refreshes, clamped item tools to the right side, and improved card text wrapping/visibility.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:9f9ad1d52c20 -->
-
-### 2026-04-08T21:42:48+03:30
-- Changed files: `src/panel/panel.html`, `src/panel/panel.js`, `src/panel/panel.css`, `src/background.js`, `src/help/help.html`, `src/help/help.css`, `src/help/help.js`
-- Summary: Aligned the header with the brand block on the right and actions on the left, added theme mode for the panel and help page with system default, added real help-page language switching, and hardened list layout rendering to avoid collapsed item cards.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:7d626c3ae4d0 -->
-
 ## Last Updated
-- 2026-04-09T11:22:05+03:30
+- 2026-04-09T11:13:18+03:30

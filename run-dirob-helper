@@ -1,4 +1,111 @@
 #!/bin/zsh
 set -euo pipefail
-cd /Users/drnoobmaster/development/Works/projects/torob
-exec python3 scripts/dirob_log_helper.py
+
+ROOT_DIR="/Users/drnoobmaster/development/Works/projects/torob"
+HELPER_SCRIPT="$ROOT_DIR/scripts/dirob_log_helper.py"
+LAUNCH_AGENT_ID="com.dirob.log-helper"
+LAUNCH_AGENT_DIR="$HOME/Library/LaunchAgents"
+LAUNCH_AGENT_PATH="$LAUNCH_AGENT_DIR/$LAUNCH_AGENT_ID.plist"
+ARTIFACT_DIR="$ROOT_DIR/research/artifacts/dirob"
+STDOUT_PATH="$ARTIFACT_DIR/dirob-helper-launchd.out.log"
+STDERR_PATH="$ARTIFACT_DIR/dirob-helper-launchd.err.log"
+
+ensure_artifacts() {
+  mkdir -p "$ARTIFACT_DIR"
+}
+
+write_launch_agent() {
+  mkdir -p "$LAUNCH_AGENT_DIR"
+  ensure_artifacts
+  cat >"$LAUNCH_AGENT_PATH" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>$LAUNCH_AGENT_ID</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/usr/bin/python3</string>
+      <string>$HELPER_SCRIPT</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>$ROOT_DIR</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>$STDOUT_PATH</string>
+    <key>StandardErrorPath</key>
+    <string>$STDERR_PATH</string>
+  </dict>
+</plist>
+PLIST
+}
+
+unload_launch_agent() {
+  launchctl bootout "gui/$UID" "$LAUNCH_AGENT_PATH" >/dev/null 2>&1 || true
+  launchctl unload -w "$LAUNCH_AGENT_PATH" >/dev/null 2>&1 || true
+}
+
+load_launch_agent() {
+  launchctl bootstrap "gui/$UID" "$LAUNCH_AGENT_PATH" >/dev/null 2>&1 || launchctl load -w "$LAUNCH_AGENT_PATH"
+  launchctl enable "gui/$UID/$LAUNCH_AGENT_ID" >/dev/null 2>&1 || true
+  launchctl kickstart -k "gui/$UID/$LAUNCH_AGENT_ID" >/dev/null 2>&1 || true
+}
+
+print_status() {
+  if curl -fsS "http://127.0.0.1:45173/health" >/dev/null 2>&1; then
+    echo "Dirob log helper: running"
+  else
+    echo "Dirob log helper: not running"
+  fi
+  if [[ -f "$LAUNCH_AGENT_PATH" ]]; then
+    echo "Autostart: installed ($LAUNCH_AGENT_PATH)"
+  else
+    echo "Autostart: not installed"
+  fi
+}
+
+usage() {
+  cat <<USAGE
+Usage: ./run-dirob-helper [command]
+
+Commands:
+  (no command)            Run logger helper in foreground
+  --install-autostart     Install macOS LaunchAgent and start helper
+  --uninstall-autostart   Remove LaunchAgent autostart
+  --status                Show helper and autostart status
+  --help                  Show this message
+USAGE
+}
+
+case "${1:-}" in
+  "")
+    cd "$ROOT_DIR"
+    exec /usr/bin/python3 "$HELPER_SCRIPT"
+    ;;
+  --install-autostart)
+    write_launch_agent
+    unload_launch_agent
+    load_launch_agent
+    echo "Installed and started autostart logger: $LAUNCH_AGENT_ID"
+    ;;
+  --uninstall-autostart)
+    unload_launch_agent
+    rm -f "$LAUNCH_AGENT_PATH"
+    echo "Removed autostart logger: $LAUNCH_AGENT_ID"
+    ;;
+  --status)
+    print_status
+    ;;
+  --help|-h)
+    usage
+    ;;
+  *)
+    echo "Unknown command: $1" >&2
+    usage >&2
+    exit 1
+    ;;
+esac

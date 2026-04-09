@@ -29,6 +29,10 @@ body {
   font: 14px/1.8 "SF Pro Display", "Segoe UI", Tahoma, sans-serif;
 }
 
+html[lang="fa"] body {
+  font-family: "Vazir", "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
+}
+
 :root[data-theme="light"] body {
   background: radial-gradient(circle at top, #f7f8fb 0%, #edf1f6 52%);
 }
@@ -98,10 +102,19 @@ body {
 
 .hero {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
   padding: 20px;
   margin-bottom: 18px;
+}
+
+.hero-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+  color: inherit;
 }
 
 .hero-mark {
@@ -119,6 +132,22 @@ body {
 .hero h1,
 .card h2 {
   margin: 0 0 8px;
+}
+
+.hero-version {
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.hero-brand h1 {
+  margin: 0;
+}
+
+.hero-subtitle {
+  margin: 0;
 }
 
 .hero p,

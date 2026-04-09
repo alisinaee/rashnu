@@ -28,13 +28,27 @@ Use this when the extension is not from Chrome Web Store.
 
 ## Development
 
-1. Run the local logger helper:
+### Logger Setup (Recommended)
+
+One-time auto-start setup:
+
+```bash
+./run-dirob-helper --install-autostart
+```
+
+Check status:
+
+```bash
+./run-dirob-helper --status
+```
+
+Foreground/manual mode:
 
 ```bash
 ./run-dirob-helper
 ```
 
-3. Open Digikala or Torob pages and use the Dirob side panel.
+After setup, open Digikala or Torob pages and use the Dirob side panel.
 
 ## License
 

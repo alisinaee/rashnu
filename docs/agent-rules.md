@@ -19,7 +19,7 @@
 - Ensure dirob should work on Torob and Digikala product detail pages too.
 - Ensure top reload should work without refreshing the page.
 - Ensure changing lang should not require refreshing.
-- Ensure in RTL the reload for each element should be on top right.
+- Ensure in RTL the per-item corner tools (reload/find) should be on the left side to avoid overlap with title/status content.
 - Ensure icon-first controls expose localized hover titles and aria labels based on selected language.
 - Ensure font scale affects list/item content only and must not resize header/settings sections.
 - Ensure settings tooltips explain feature behavior (not just label text), and guide/status chips must expose explanatory tooltips.
@@ -48,6 +48,12 @@
 - Ensure switch controls keep a fixed LTR thumb geometry so RTL pages never invert or overflow toggle thumbs.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T13:01:28+03:30
+- Changed files: `src/panel/panel.css`
+- Summary: Switched per-item corner tool anchoring to logical inline-end so in RTL they render on the left side, avoiding overlap on the right.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:4f83f1713ad7 -->
+
 ### 2026-04-09T12:59:18+03:30
 - Changed files: `src/panel/panel.css`
 - Summary: Fixed switch control geometry by forcing toggle track layout to LTR with explicit start alignment and clipping, preventing RTL overflow/misaligned thumbs.
@@ -162,11 +168,5 @@
 - Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
 <!-- fingerprint:3a19f53f37ef -->
 
-### 2026-04-09T10:23:18+03:30
-- Changed files: `src/panel/panel.html`, `src/panel/panel.js`, `src/help/help.html`, `src/help/help.js`
-- Summary: Added centralized localized tooltip/ARIA wiring for panel and help icon controls, including settings toggles/layout/size actions and GitHub brand links, and removed hardcoded English title attributes from markup.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:6ea9f37002c4 -->
-
 ## Last Updated
-- 2026-04-09T12:59:18+03:30
+- 2026-04-09T13:01:28+03:30

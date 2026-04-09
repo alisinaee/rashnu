@@ -34,11 +34,18 @@
 - Ensure guide-jump blink starts only after programmatic scroll settles.
 - Ensure guide-jump highlight combines overlay flash with border pulse for clearer focus indication.
 - Ensure README documents explicit manual Chrome load-unpacked steps for GitHub users.
+- Ensure README explicitly describes unofficial extension installation flow (`Developer mode` + `Load unpacked`) for Chrome users.
 - Ensure settings diagnostics text (listing hint, log meta, logger status/path) is visible only when Debug mode is enabled.
 - Ensure auto log capture/persistence is gated by both Debug and Auto Logs being enabled.
 - Ensure Debug mode exposes an export action so users can download and share diagnostic logs.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T11:13:18+03:30
+- Changed files: `README.md`
+- Summary: Rewrote install guidance as a dedicated “Install In Chrome (Unofficial / Unpacked)” section with explicit `chrome://extensions` developer-mode steps, load-unpacked flow, and reload instructions.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:34a69a4fdc4f -->
+
 ### 2026-04-09T11:11:47+03:30
 - Changed files: `src/panel/panel.html`, `src/panel/panel.js`, `src/panel/panel.css`, `src/background.js`
 - Summary: Added a bottom "Export logs" action, hid the entire diagnostics/info block unless Debug is enabled, disabled the Auto Logs toggle while Debug is off, and enforced background log writes to run only when both Debug and Auto Logs are enabled.
@@ -153,11 +160,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:44378460f090 -->
 
-### 2026-04-09T09:57:26+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Made the settings section more minimal by shrinking paddings, gaps, control heights, switch size, segmented controls, and paired cards while preserving behavior and responsive layout.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:5f94cc3bf869 -->
-
 ## Last Updated
-- 2026-04-09T11:11:47+03:30
+- 2026-04-09T11:13:18+03:30

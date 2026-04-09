@@ -274,6 +274,9 @@
   let panelScrollHoldUntil = 0;
   let isProgrammaticScroll = false;
   let pendingSoftRefreshTimer = 0;
+  let panelPort = null;
+  let panelPortReconnectTimer = 0;
+  let panelShuttingDown = false;
   const guideJumpTimers = new WeakMap();
 
   boot().catch((error) => {
@@ -284,6 +287,7 @@
   });
 
   async function boot() {
+    bindPanelPort();
     bindEvents();
     await refreshState();
 
@@ -303,6 +307,49 @@
         refreshState().catch(() => {});
       }
     });
+  }
+
+  function bindPanelPort() {
+    if (panelShuttingDown || panelPort) {
+      return;
+    }
+    try {
+      panelPort = chrome.runtime.connect({
+        name: "dirob-panel"
+      });
+      panelPort.onDisconnect.addListener(() => {
+        panelPort = null;
+        schedulePanelPortReconnect();
+      });
+    } catch (_error) {
+      panelPort = null;
+      schedulePanelPortReconnect();
+    }
+
+    window.addEventListener(
+      "unload",
+      () => {
+        panelShuttingDown = true;
+        if (panelPortReconnectTimer) {
+          window.clearTimeout(panelPortReconnectTimer);
+          panelPortReconnectTimer = 0;
+        }
+        try {
+          panelPort?.disconnect();
+        } catch (_error) {}
+      },
+      { once: true }
+    );
+  }
+
+  function schedulePanelPortReconnect() {
+    if (panelShuttingDown || panelPort || panelPortReconnectTimer) {
+      return;
+    }
+    panelPortReconnectTimer = window.setTimeout(() => {
+      panelPortReconnectTimer = 0;
+      bindPanelPort();
+    }, 450);
   }
 
   function bindEvents() {

@@ -13,6 +13,7 @@
   let debugEnabled = false;
   let selectionModeEnabled = false;
   let guideNumbersEnabled = false;
+  let panelActive = false;
   let highlightedElement = null;
   let bootAttempts = 0;
   let syncTimer = null;
@@ -85,17 +86,24 @@
     const stored = await chrome.storage.local.get([
       "dirobDebugEnabled",
       "dirobSelectionModeEnabled",
-      "dirobGuideNumbersEnabled"
+      "dirobGuideNumbersEnabled",
+      "dirobPanelActive"
     ]);
     debugEnabled = Boolean(stored.dirobDebugEnabled);
     selectionModeEnabled = Boolean(stored.dirobSelectionModeEnabled);
     guideNumbersEnabled = Boolean(stored.dirobGuideNumbersEnabled);
+    panelActive = Boolean(stored.dirobPanelActive);
     ensureHighlightStyle();
     ensureGuideStyle();
-    if (!selectionModeEnabled) {
+    if (!selectionModeEnabled || !panelActive) {
       clearHighlightedElement();
     }
-    renderGuideBadges();
+    if (panelActive) {
+      renderGuideBadges();
+    } else {
+      clearGuideBadges();
+      focusedSourceId = null;
+    }
   }
 
   async function notifyPageState() {
@@ -123,6 +131,11 @@
     const revision = ++refreshRevision;
     pageContext = extractor.getPageContext();
     resetLocalStateIfNeeded(pageContext);
+    if (!panelActive) {
+      clearGuideBadges();
+      clearHighlightedElement();
+      return;
+    }
     if (!pageContext.isSupported) {
       return;
     }
@@ -225,7 +238,7 @@
 
   function bindSelectionListeners(element, sourceId) {
     const handleEnter = () => {
-      if (!selectionModeEnabled) {
+      if (!selectionModeEnabled || !panelActive) {
         return;
       }
       const row = rowState.get(sourceId);
@@ -276,6 +289,9 @@
   }
 
   function scheduleSync() {
+    if (!panelActive) {
+      return;
+    }
     if (syncTimer) {
       return;
     }
@@ -333,6 +349,9 @@
   }
 
   function handleDomMutation(mutations) {
+    if (!panelActive) {
+      return;
+    }
     if (!shouldRefreshForMutations(mutations)) {
       logger.debug("content", "mutation_ignored", {
         count: Array.isArray(mutations) ? mutations.length : 0
@@ -351,14 +370,18 @@
     pageContext = extractor.getPageContext();
     await syncSettings();
     await notifyPageState();
-    refreshCards();
+    if (panelActive) {
+      refreshCards();
+    }
   }
 
   async function handleSoftRescan() {
     pageContext = extractor.getPageContext();
     await syncSettings();
     await notifyPageState();
-    refreshCards();
+    if (panelActive) {
+      refreshCards();
+    }
   }
 
   function handleScrollToItem(sourceId) {
@@ -413,7 +436,9 @@
       lastKnownHref = location.href;
       resetLocalState();
       notifyPageState().catch(() => {});
-      scheduleNavigationRescan();
+      if (panelActive) {
+        scheduleNavigationRescan();
+      }
     };
 
     history.pushState = function patchedPushState(...args) {
@@ -430,6 +455,19 @@
 
     window.addEventListener("popstate", handleLocationChange, true);
     window.addEventListener("hashchange", handleLocationChange, true);
+    window.addEventListener(
+      "pageshow",
+      () => {
+        if (lastKnownHref !== location.href) {
+          handleLocationChange();
+          return;
+        }
+        if (panelActive) {
+          scheduleNavigationRescan();
+        }
+      },
+      true
+    );
 
     locationPollTimer = window.setInterval(handleLocationChange, 800);
   }
@@ -449,6 +487,10 @@
       }
       navigationRescanAttempts += 1;
       await notifyPageState();
+      if (!panelActive) {
+        navigationRescanTimer = null;
+        return;
+      }
       await refreshCards();
       const hasRows = rowState.size > 0;
       const shouldContinue = navigationRescanAttempts < 8 && (!pageContext?.isSupported || !hasRows);
@@ -491,7 +533,24 @@
       if (Object.prototype.hasOwnProperty.call(changes, "dirobGuideNumbersEnabled")) {
         guideNumbersEnabled = Boolean(changes.dirobGuideNumbersEnabled.newValue);
         ensureGuideStyle();
-        renderGuideBadges();
+        if (panelActive) {
+          renderGuideBadges();
+        } else {
+          clearGuideBadges();
+        }
+      }
+      if (Object.prototype.hasOwnProperty.call(changes, "dirobPanelActive")) {
+        panelActive = Boolean(changes.dirobPanelActive.newValue);
+        if (!panelActive) {
+          clearGuideBadges();
+          clearHighlightedElement();
+          focusedSourceId = null;
+          resetLocalState();
+          notifyPageState().catch(() => {});
+          return;
+        }
+        notifyPageState().catch(() => {});
+        scheduleNavigationRescan();
       }
     });
   }
@@ -634,7 +693,7 @@
 
   function renderGuideBadges() {
     clearGuideBadges();
-    if (!guideNumbersEnabled) {
+    if (!guideNumbersEnabled || !panelActive) {
       return;
     }
 

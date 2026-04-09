@@ -42,8 +42,16 @@
 - Ensure background row sync removes untouched source IDs (instead of only marking invisible) to prevent stale panel items and duplicate guide mappings.
 - Ensure debug mode does not render per-item raw JSON/debug payload blocks inside result cards.
 - Ensure SPA URL changes trigger a short auto-rescan retry cycle so Dirob refreshes without manual page reload.
+- Ensure browser back/forward navigation triggers Dirob resync without requiring manual page refresh.
+- Ensure Dirob has zero on-page visual footprint when side panel is closed (no guide numbers/highlights until panel reopens).
 
 ## Recent Changes (Last 20)
+### 2026-04-09T12:35:14+03:30
+- Changed files: `src/panel/panel.js`, `src/background.js`, `src/content.js`
+- Summary: Added a panel-open connection channel (`runtime.connect`) to drive a shared `dirobPanelActive` state, disabled on-page guide/highlight behavior when panel is closed, and strengthened navigation resync on tab/url/back-forward events (including `pageshow`) plus auto-rescan on panel activation.
+- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
+<!-- fingerprint:1b28aab5ea74 -->
+
 ### 2026-04-09T12:25:02+03:30
 - Changed files: `src/content.js`
 - Summary: Added navigation rescan retries after URL changes (state reset + delayed repeated `notifyPageState/refreshCards`) so SPA transitions settle and Dirob updates automatically without manual refresh.
@@ -158,11 +166,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:467d79691057 -->
 
-### 2026-04-09T10:07:35+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Reduced the header D brand badge footprint (box size, radius, and glyph size) to free horizontal space in the top bar.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:85e49a7a21f3 -->
-
 ## Last Updated
-- 2026-04-09T12:25:02+03:30
+- 2026-04-09T12:35:14+03:30

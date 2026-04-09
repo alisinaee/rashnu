@@ -19,6 +19,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   const logEntries = [];
   const pendingLogEntries = [];
   let activeCount = 0;
+  let panelConnectionCount = 0;
+  let panelActive = false;
   let debugEnabled = false;
   let selectionModeEnabled = false;
   let syncPageViewEnabled = false;
@@ -46,6 +48,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
 
   async function initialize() {
     await loadSettings();
+    await setPanelActiveState(false, { force: true, triggerRescan: false });
     await loadLogs();
     await ensureLogHelperHealth();
     if (chrome.sidePanel?.setPanelBehavior) {
@@ -68,7 +71,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       "dirobLayoutMode",
       "dirobMinimalViewEnabled",
       "dirobSettingsOpen",
-      "dirobThemeMode"
+      "dirobThemeMode",
+      "dirobPanelActive"
     ]);
     debugEnabled = Boolean(stored.dirobDebugEnabled);
     selectionModeEnabled = Boolean(stored.dirobSelectionModeEnabled);
@@ -81,6 +85,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     minimalViewEnabled = Boolean(stored.dirobMinimalViewEnabled);
     settingsOpen = Boolean(stored.dirobSettingsOpen);
     themeMode = ["system", "dark", "light"].includes(stored.dirobThemeMode) ? stored.dirobThemeMode : "system";
+    panelActive = Boolean(stored.dirobPanelActive);
   }
 
   async function loadLogs() {
@@ -152,14 +157,39 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         : "system";
       notifyPanels();
     }
+    if (Object.prototype.hasOwnProperty.call(changes, "dirobPanelActive")) {
+      panelActive = Boolean(changes.dirobPanelActive.newValue);
+      notifyPanels();
+    }
   });
 
-  chrome.tabs.onActivated.addListener(() => {
+  chrome.tabs.onActivated.addListener((activeInfo) => {
+    if (panelActive && activeInfo?.tabId != null) {
+      softRescanTab(activeInfo.tabId).catch(() => {});
+    }
     notifyPanels();
   });
 
-  chrome.tabs.onUpdated.addListener((_tabId, changeInfo) => {
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+    if (typeof changeInfo.url === "string") {
+      const state = ensureTabState(tabId);
+      if (state.pageUrl && state.pageUrl !== changeInfo.url) {
+        resetPageState(state);
+        state.pageKey = "";
+        state.pageUrl = changeInfo.url;
+        state.pageMode = "unsupported";
+        state.isSupported = false;
+      }
+      if (panelActive) {
+        softRescanTab(tabId).catch(() => {});
+      }
+      notifyPanels();
+      return;
+    }
     if (changeInfo.status === "complete") {
+      if (panelActive) {
+        softRescanTab(tabId).catch(() => {});
+      }
       notifyPanels();
     }
   });
@@ -167,6 +197,20 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   chrome.tabs.onRemoved.addListener((tabId) => {
     tabStates.delete(tabId);
     notifyPanels();
+  });
+
+  chrome.runtime.onConnect.addListener((port) => {
+    if (port?.name !== "dirob-panel") {
+      return;
+    }
+    panelConnectionCount += 1;
+    setPanelActiveState(true).catch(() => {});
+    port.onDisconnect.addListener(() => {
+      panelConnectionCount = Math.max(0, panelConnectionCount - 1);
+      if (panelConnectionCount === 0) {
+        setPanelActiveState(false).catch(() => {});
+      }
+    });
   });
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -1329,6 +1373,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     const state = tabId == null ? null : ensureTabState(tabId);
     return {
       activeTabId: tabId || null,
+      panelActive,
       debugEnabled,
       selectionModeEnabled,
       syncPageViewEnabled,
@@ -1618,6 +1663,27 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       [LOG_STORAGE_KEY]: logEntries
     }).catch(() => {});
     scheduleLogFlush();
+  }
+
+  async function setPanelActiveState(enabled, options = {}) {
+    const next = Boolean(enabled);
+    if (!options.force && panelActive === next) {
+      return;
+    }
+    panelActive = next;
+    await chrome.storage.local.set({
+      dirobPanelActive: panelActive
+    });
+    addLog("info", "background", "panel_active_changed", {
+      panelActive
+    });
+    if (panelActive && options.triggerRescan !== false) {
+      const activeTab = await getActiveTab();
+      if (activeTab?.id != null) {
+        await forceRescanTab(activeTab.id);
+      }
+    }
+    notifyPanels();
   }
 
   function notifyPanels() {

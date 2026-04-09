@@ -731,6 +731,11 @@ html[dir="ltr"] .brand-block > div {
   font-weight: 650;
 }
 
+.item-tool[data-role="reload-button"] {
+  font-size: 1.2em;
+  font-weight: 800;
+}
+
 .guide-chip {
   display: inline-flex;
   min-width: 22px;
@@ -1040,16 +1045,19 @@ html[dir="ltr"] .brand-block > div {
 }
 
 .action-icon--search {
-  gap: 1px;
+  gap: 2px;
+  font-weight: 800;
 }
 
 .action-icon__search {
-  font-size: 1.01em;
+  font-size: 1.24em;
+  line-height: 1;
 }
 
 .action-icon__site {
-  font-size: 0.72em;
-  transform: translateY(1px);
+  font-size: 0.9em;
+  transform: translateY(0.5px);
+  font-weight: 800;
 }
 
 .action-icon--google {
@@ -1067,7 +1075,16 @@ html[dir="ltr"] .brand-block > div {
 }
 
 .action-icon--reload {
-  font-size: 1.1em;
+  font-size: 1.36em;
+  font-weight: 800;
+}
+
+.action-button--icon[data-role="search-target"] {
+  font-size: 1.08em;
+}
+
+.action-button--icon[data-role="reload-button-inline"] {
+  font-size: 1.12em;
 }
 
 :root[data-theme="light"] .status-chip.loading {

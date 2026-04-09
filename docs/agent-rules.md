@@ -27,8 +27,15 @@
 - Ensure size scale range remains constrained to -5 through +5.
 - Ensure logger setup supports one-time autostart installation so users avoid per-session manual helper launch.
 - Ensure compact action icons remain slightly larger for readability, and normal list/grid cards compress subtitle/metrics into one-row chips.
+- Ensure search-on-site and reload icons stay visually larger/heavier than default compact icon sizing.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T10:46:57+03:30
+- Changed files: `src/panel/panel.css`
+- Summary: Increased visual weight and size for compact search-target and reload icons (including corner reload tool) to improve legibility in minimal/grid action rows.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:ec5ff8b57b07 -->
+
 ### 2026-04-09T10:44:05+03:30
 - Changed files: `src/panel/panel.js`, `src/panel/panel.css`
 - Summary: Increased compact action icon sizing for better readability and replaced normal-mode subtitle/meta text lines with a single-row chip strip (target/confidence/retries) to save vertical space in both list and grid cards.
@@ -143,11 +150,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:956714b29c61 -->
 
-### 2026-04-09T09:33:02+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Fixed grid-card vertical overlap by forcing content-sized implicit rows and content-sized grid cards so full item blocks render without clipping in side panel grid mode.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:9f23586b9de6 -->
-
 ## Last Updated
-- 2026-04-09T10:44:05+03:30
+- 2026-04-09T10:46:57+03:30

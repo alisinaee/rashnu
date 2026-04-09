@@ -20,8 +20,15 @@
 - Ensure top reload should work without refreshing the page.
 - Ensure changing lang should not require refreshing.
 - Ensure in RTL the reload for each element should be on top right.
+- Ensure README includes explicit unofficial Chrome install steps (`chrome://extensions`, enable `Developer mode`, and `Load unpacked`).
 
 ## Recent Changes (Last 20)
+### 2026-04-09T11:22:05+03:30
+- Changed files: `README.md`
+- Summary: Added a dedicated unofficial/unpacked Chrome installation section with explicit Developer Mode, Load Unpacked, and extension reload steps.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:51a6ed1e8d2c -->
+
 ### 2026-04-09T10:11:41+03:30
 - Changed files: `src/panel/panel.html`, `src/panel/panel.css`, `src/panel/panel.js`
 - Summary: Made the top brand area clickable to open the project GitHub repository and added a fixed app version line ('0.0.1 alpha test') under the Dirob title; removed obsolete page-mode header binding.
@@ -136,11 +143,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:7d626c3ae4d0 -->
 
-### 2026-04-08T21:21:56+03:30
-- Changed files: `src/panel/panel.html`, `src/panel/panel.js`, `src/panel/panel.css`, `src/lib/extract-listing-cards.js`, `src/lib/normalize.js`, `src/content.js`, `src/background.js`, `src/help/help.html`, +4 more
-- Summary: Fixed top refresh wiring, made settings toggle from the header, added local help page, widened font-scale range, tightened title/image/query cleanup, reduced sync churn with sync dedupe, improved minimal/grid overflow handling, and prepared the repo for MIT GitHub publish.
-- Behavior impact: Added or refreshed 4 behavior rule(s) from user instructions.
-<!-- fingerprint:6b29e3f1faed -->
-
 ## Last Updated
-- 2026-04-09T10:11:41+03:30
+- 2026-04-09T11:22:05+03:30

@@ -44,8 +44,15 @@
 - Ensure SPA URL changes trigger a short auto-rescan retry cycle so Dirob refreshes without manual page reload.
 - Ensure browser back/forward navigation triggers Dirob resync without requiring manual page refresh.
 - Ensure Dirob has zero on-page visual footprint when side panel is closed (no guide numbers/highlights until panel reopens).
+- Ensure Persian UI always uses bundled Vazir webfont files (not system-dependent fallback) across panel/help/sidebar/popup surfaces.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T12:38:27+03:30
+- Changed files: `assets/fonts/Vazir-Regular-FD.woff2`, `assets/fonts/Vazir-Bold-FD.woff2`, `src/panel/panel.css`, `src/help/help.css`, `src/sidebar.css`, `src/popup/popup.html`
+- Summary: Bundled Vazir font files into the extension and added local `@font-face` declarations for panel/help/sidebar/popup so Persian text consistently renders in Vazir regardless of OS-installed fonts.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:72ca5b4f58c4 -->
+
 ### 2026-04-09T12:35:14+03:30
 - Changed files: `src/panel/panel.js`, `src/background.js`, `src/content.js`
 - Summary: Added a panel-open connection channel (`runtime.connect`) to drive a shared `dirobPanelActive` state, disabled on-page guide/highlight behavior when panel is closed, and strengthened navigation resync on tab/url/back-forward events (including `pageshow`) plus auto-rescan on panel activation.
@@ -160,11 +167,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:9fba763f1626 -->
 
-### 2026-04-09T10:11:41+03:30
-- Changed files: `src/panel/panel.html`, `src/panel/panel.css`, `src/panel/panel.js`
-- Summary: Made the top brand area clickable to open the project GitHub repository and added a fixed app version line ('0.0.1 alpha test') under the Dirob title; removed obsolete page-mode header binding.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:467d79691057 -->
-
 ## Last Updated
-- 2026-04-09T12:35:14+03:30
+- 2026-04-09T12:38:27+03:30

@@ -22,6 +22,96 @@
 - Ensure in RTL the reload for each element should be on top right.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T10:11:41+03:30
+- Changed files: `src/panel/panel.html`, `src/panel/panel.css`, `src/panel/panel.js`
+- Summary: Made the top brand area clickable to open the project GitHub repository and added a fixed app version line ('0.0.1 alpha test') under the Dirob title; removed obsolete page-mode header binding.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:467d79691057 -->
+
+### 2026-04-09T10:07:35+03:30
+- Changed files: `src/panel/panel.css`
+- Summary: Reduced the header D brand badge footprint (box size, radius, and glyph size) to free horizontal space in the top bar.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:85e49a7a21f3 -->
+
+### 2026-04-09T10:06:33+03:30
+- Changed files: `src/panel/panel.html`, `src/panel/panel.css`
+- Summary: Moved compact language and theme icon buttons into the settings top bar beside the close button, removing their separate row to save vertical space.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:06e8b6471d97 -->
+
+### 2026-04-09T10:04:13+03:30
+- Changed files: `src/panel/panel.html`, `src/panel/panel.css`, `src/panel/panel.js`
+- Summary: Replaced wide Theme and Language controls with compact icon-style quick action buttons in one row, and moved labels to tooltips/ARIA so settings consumes less vertical space.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:7c40f783a0cf -->
+
+### 2026-04-09T10:01:01+03:30
+- Changed files: `src/panel/panel.html`, `src/panel/panel.css`
+- Summary: Removed the top local-logger badge control from settings and replaced it with a simple colored status text line in the log section (green connected, red disconnected).
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:44378460f090 -->
+
+### 2026-04-09T09:57:26+03:30
+- Changed files: `src/panel/panel.css`
+- Summary: Made the settings section more minimal by shrinking paddings, gaps, control heights, switch size, segmented controls, and paired cards while preserving behavior and responsive layout.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:5f94cc3bf869 -->
+
+### 2026-04-09T09:54:42+03:30
+- Changed files: `src/panel/panel.html`, `src/panel/panel.js`
+- Summary: Removed the header placeholder text 'Waiting for a supported page...' by clearing the initial markup and rendering an empty subtitle when the active page is unsupported.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:60a8dbd43793 -->
+
+### 2026-04-09T09:52:35+03:30
+- Changed files: `src/panel/panel.css`
+- Summary: Forced brand header icon placement to always stay on the right of Dirob text by using a fixed row-reverse brand layout, and increased the D badge size for better visual prominence.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:8b83e9dbba7c -->
+
+### 2026-04-09T09:49:25+03:30
+- Changed files: `src/panel/panel.css`
+- Summary: Pinned brand header layout so the Dirob icon always stays to the right of title/subtitle in both FA and EN, while preserving language-specific text direction/alignment inside the text block.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:e040e9b9a8c6 -->
+
+### 2026-04-09T09:43:34+03:30
+- Changed files: `src/panel/panel.css`
+- Summary: Fixed confusing light-theme switch states (clear gray OFF vs orange ON) while keeping a single active thumb direction across languages, and prevented list/grid card shrink-collapse by making item cards non-shrinking in the scroll list.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:4b95bf2d2f31 -->
+
+### 2026-04-09T09:40:31+03:30
+- Changed files: `src/panel/panel.css`
+- Summary: Made switch thumb direction locale-invariant (no RTL/LTR flip) and improved light-theme contrast for switches, active controls, hover states, and logger status badges.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:e2c9f33fefef -->
+
+### 2026-04-09T09:35:21+03:30
+- Changed files: `src/panel/panel.css`
+- Summary: Hardened grid layout against clipped/overlapping cards by using max-content implicit rows, max-content grid cards, and non-shrinking direct children so each product card keeps full vertical content.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:956714b29c61 -->
+
+### 2026-04-09T09:33:02+03:30
+- Changed files: `src/panel/panel.css`
+- Summary: Fixed grid-card vertical overlap by forcing content-sized implicit rows and content-sized grid cards so full item blocks render without clipping in side panel grid mode.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:9f23586b9de6 -->
+
+### 2026-04-09T09:26:55+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
+- Summary: Reworked grid cards to use compact inline actions, removed overlapping corner tools in grid mode, reduced grid thumbnail footprint, and hide thumbnails in minimal grid so item content stays visible in both normal and minimal grid views.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:151bc41a0dc9 -->
+
+### 2026-04-09T09:20:03+03:30
+- Changed files: `src/panel/panel.css`
+- Summary: Removed panel item-title clamping and freed minimal-mode header width so list cards can show full product names in both normal and minimal views.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:823d176d77e2 -->
+
 ### 2026-04-08T22:23:15+03:30
 - Changed files: `src/panel/panel.js`, `src/panel/panel.css`, `src/help/help.css`
 - Summary: Replaced layout-breaking panel zoom with variable-based sizing, made grid responsive, forced deterministic list/grid/minimal class switching, improved top refresh rebuild behavior, fixed card tool placement, and hardened help-page light-theme readability.
@@ -52,89 +142,5 @@
 - Behavior impact: Added or refreshed 4 behavior rule(s) from user instructions.
 <!-- fingerprint:6b29e3f1faed -->
 
-### 2026-04-08T20:17:52+03:30
-- Changed files: `src/lib/normalize.js`, `src/lib/extract-listing-cards.js`, `src/content.js`, `src/background.js`, `src/panel/panel.html`, `src/panel/panel.css`, `src/panel/panel.js`
-- Summary: Stabilized Dirob around guide-number-first rows, filtered self-triggered DOM refreshes, added page-only source/match caches with retry cap 3, cleaned search queries, added background source-price resolution for Digikala, and redesigned the panel header/settings with minimal and grid/list modes.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:462a0878a185 -->
-
-### 2026-04-08T19:38:45+03:30
-- Changed files: `manifest.json`, `src/background.js`, `src/content.js`, `src/lib/extract-listing-cards.js`, `src/panel/panel.html`, `src/panel/panel.css`, `src/panel/panel.js`, `scripts/dirob_log_helper.py`, +2 more
-- Summary: Switched Dirob to guide-number-first ordering, added localhost log helper, preserved panel scroll on soft reloads, added page/panel locate interactions, and tightened structured price extraction for Digikala/Torob detail pages.
-- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
-<!-- fingerprint:74a26c045aab -->
-
-### 2026-04-08T17:38:44+03:30
-- Changed files: `src/lib/normalize.js`, `src/lib/extract-listing-cards.js`, `src/content.js`, `src/background.js`, `src/panel/panel.html`, `src/panel/panel.css`, `src/panel/panel.js`
-- Summary: Added collapsible settings, non-invasive page-view sync scrolling, fixed detail-page selection overwrite, improved Digikala price extraction to avoid insurance/rating noise, and made folder selection immediately create the log file target.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:318aa5af6a90 -->
-
-### 2026-04-08T17:07:58+03:30
-- Changed files: `src/background.js`, `src/content.js`, `src/panel/panel.js`, `src/panel/panel.css`
-- Summary: Added persisted sync-page-view state, switched detail-page visibility tracking to real DOM visibility, and upgraded the panel settings to material-style switches with row focus syncing in the panel.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:f2febc054879 -->
-
-### 2026-04-08T16:49:57+03:30
-- Changed files: `src/background.js`, `src/panel/panel.js`
-- Summary: Normalized Digikala API prices from rial to toman and replaced full panel list rewrites with keyed per-card patching to stop whole-list blinking on updates.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:ac99bc8dec67 -->
-
-### 2026-04-08T16:42:33+03:30
-- Changed files: `src/background.js`, `src/panel/panel.js`, `src/panel/panel.css`
-- Summary: Stopped repeated cached reapplication for visible rows, added bounded auto retries up to 5 per item, reduced panel rerender flicker, and fixed side-panel scroll container layout with light loading animations.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:8b44683418ad -->
-
-### 2026-04-08T16:33:31+03:30
-- Changed files: `src/background.js`, `src/content.js`, `src/panel/panel.html`, `src/panel/panel.css`, `src/panel/panel.js`
-- Summary: Added guide-number mode with panel toggle, in-page numbered badges, panel number chips, and preserved detail-page suggested products.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:143534ac4706 -->
-
-### 2026-04-08T16:14:04+03:30
-- Changed files: `src/lib/extract-listing-cards.js`, `src/background.js`
-- Summary: Tightened Digikala listing title extraction to avoid shipping/seller labels and switched panel ordering to stable append order so infinite-scroll products are added at the end instead of reordering the list.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:bae71db3b643 -->
-
-### 2026-04-08T15:59:14+03:30
-- Changed files: `src/lib/extract-listing-cards.js`, `src/content.js`, `src/background.js`, `src/panel/panel.html`, `src/panel/panel.css`, `src/panel/panel.js`
-- Summary: Added forced active-tab rescans, strengthened Digikala detail extraction with JSON-LD/meta fallbacks, switched font controls to minimal +/- with current size display, and fixed RTL per-item reload positioning.
-- Behavior impact: Added or refreshed 4 behavior rule(s) from user instructions.
-<!-- fingerprint:75f680e0a6c6 -->
-
-### 2026-04-08T15:50:21+03:30
-- Changed files: `src/lib/extract-listing-cards.js`, `src/content.js`, `src/background.js`, `src/panel/panel.html`, `src/panel/panel.css`, `src/panel/panel.js`
-- Summary: Added product-detail page support for Digikala and Torob, localized panel text for Persian/English, added font-size and auto-log controls, moved per-item reload to the card corner, and tightened image fallback behavior.
-- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
-<!-- fingerprint:4e401d670265 -->
-
-### 2026-04-08T15:23:07+03:30
-- Changed files: `manifest.json`, `src/background.js`, `src/content.js`, `src/panel/panel.html`, `src/panel/panel.css`, `src/panel/panel.js`, `src/lib/logger.js`
-- Summary: Added persistent Dirob log collection across content/background/panel, with side-panel export and clear actions so debugging can use a real JSON log file.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:756794fd5720 -->
-
-### 2026-04-08T15:20:41+03:30
-- Changed files: `manifest.json`, `src/background.js`, `src/content.js`, `src/lib/extract-listing-cards.js`, `src/lib/normalize.js`, `src/lib/match.js`, `src/panel/panel.html`, `src/panel/panel.css`, +1 more
-- Summary: Converted Dirob from an injected overlay into a real Chrome side panel, added top settings/reload controls, hover-based selection mode, reverse Torob-to-Digikala lookup, and Google/reload actions per product.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:e12f6e9fb745 -->
-
-### 2026-04-08T15:00:00+03:30
-- Changed files: `manifest.json`, `src/background.js`, `src/content.js`, `src/sidebar.js`, `src/sidebar.css`, `src/sidebar.html`, `src/lib/normalize.js`, `src/lib/match.js`, +3 more
-- Summary: Scaffolded the Dirob MV3 extension with Digikala listing extraction, background Torob search/matching, injected sidebar UI, and popup-backed debug mode.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:17168c3efbe1 -->
-
-### 2026-04-08T14:22:14+03:30
-- Changed files: `docs/extension-mvp-checklist.md`, `docs/research-benchmark.md`
-- Summary: Shifted MVP from phone-only product-page comparison to a general Digikala listing-page sidebar that tracks visible products while scrolling and shows Torob matches.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:f0a6a8e2fd7b -->
-
 ## Last Updated
-- 2026-04-08T22:23:15+03:30
+- 2026-04-09T10:11:41+03:30

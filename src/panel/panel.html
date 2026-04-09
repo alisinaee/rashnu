@@ -14,28 +14,31 @@
           <button class="icon-button" data-action="toggle-settings" title="Settings">⚙</button>
           <button class="icon-button" data-action="open-help" title="Help">?</button>
         </div>
-        <div class="brand-block">
+        <a
+          class="brand-block"
+          href="https://github.com/alisinaee/dirob"
+          target="_blank"
+          rel="noreferrer noopener"
+          title="github.com/alisinaee/dirob"
+        >
           <div class="brand-mark">D</div>
           <div>
             <h1>Dirob</h1>
-            <p data-page-mode>Waiting for a supported page...</p>
+            <p class="brand-version">0.0.1 alpha test</p>
           </div>
-        </div>
+        </a>
       </header>
 
       <section class="settings-panel">
         <div class="settings-topbar">
           <h2 class="settings-title" data-settings-title>تنظیمات</h2>
-          <button class="icon-button settings-close" data-action="close-settings" title="Close settings">✕</button>
+          <div class="settings-topbar-actions">
+            <button class="icon-button quick-action-button" data-action="toggle-language" title="Language">A</button>
+            <button class="icon-button quick-action-button" data-action="cycle-theme" title="Theme">◐</button>
+            <button class="icon-button settings-close" data-action="close-settings" title="Close settings">✕</button>
+          </div>
         </div>
         <div class="settings-body" data-settings-body>
-          <div class="settings-grid settings-grid--top">
-            <button class="toggle-button" data-action="toggle-language">FA</button>
-            <div class="helper-indicator" data-log-helper-status>Logger offline</div>
-          </div>
-          <div class="settings-grid settings-grid--top settings-grid--single">
-            <button class="toggle-button" data-action="cycle-theme">Theme: System</button>
-          </div>
           <div class="switch-grid">
             <button class="switch-row" data-action="toggle-selection" type="button">
               <span class="switch-label" data-switch-label="selection">انتخاب عنصر</span>
@@ -88,6 +91,7 @@
               <button class="text-button" data-action="clear-logs">پاک کردن</button>
             </div>
           </div>
+          <p class="settings-help settings-help--helper-status" data-log-helper-status>Logger offline</p>
           <p class="settings-help settings-help--path" data-log-path>لاگ‌ها در research/artifacts/dirob ذخیره می‌شوند.</p>
         </div>
       </section>

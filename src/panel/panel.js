@@ -3,7 +3,6 @@
 
   const logger = globalThis.DirobLogger;
   const summaryText = document.querySelector("[data-summary-text]");
-  const pageModeText = document.querySelector("[data-page-mode]");
   const itemsList = document.querySelector("[data-items-list]");
   const settingsPanel = document.querySelector(".settings-panel");
   const settingsBody = document.querySelector("[data-settings-body]");
@@ -451,8 +450,14 @@
     toggleSettingsButton.title = translation.settingsOpen;
     helpButton.title = translation.help;
     closeSettingsButton.title = translation.settingsClose;
-    languageButton.textContent = translation.langButton;
-    themeButton.textContent = `${translation.theme}: ${translation[`theme_${state?.themeMode || "system"}`] || translation.theme_system}`;
+    languageButton.textContent = "A";
+    languageButton.title = translation.langButton;
+    languageButton.setAttribute("aria-label", translation.langButton);
+    const nextThemeMode = state?.themeMode || "system";
+    const themeModeLabel = translation[`theme_${nextThemeMode}`] || translation.theme_system;
+    themeButton.textContent = themeIconFor(nextThemeMode);
+    themeButton.title = `${translation.theme}: ${themeModeLabel}`;
+    themeButton.setAttribute("aria-label", `${translation.theme}: ${themeModeLabel}`);
     switchLabels.selection.textContent = translation.elementSelect;
     switchLabels.syncPageView.textContent = translation.syncPageView;
     switchLabels.minimalView.textContent = translation.minimalView;
@@ -488,10 +493,6 @@
     if (state?.minimalViewEnabled) {
       itemsList.classList.add("is-minimal");
     }
-
-    pageModeText.textContent = page?.isSupported
-      ? t(language, "modeTitle", { source: siteLabel, target: targetLabel })
-      : translation.pageWaiting;
 
     settingsHelp.textContent = state?.selectionModeEnabled
       ? translation.settingsSelection
@@ -645,6 +646,9 @@
         : globalThis.DirobNormalize.buildDigikalaSearchUrl(item.title));
     const targetUrl = match?.targetUrl || targetSearchUrl;
     const minimalViewEnabled = Boolean(state?.minimalViewEnabled);
+    const isGridLayout = state?.layoutMode === "grid";
+    const useCompactActions = minimalViewEnabled || isGridLayout;
+    const showCornerTools = !useCompactActions;
     const imageMarkup = item.imageUrl
       ? `<img src="${escapeHtml(item.imageUrl)}" alt="" data-thumb loading="lazy" referrerpolicy="no-referrer">`
       : "";
@@ -663,12 +667,11 @@
         ? `<div class="debug-box">${escapeHtml(JSON.stringify(match.debug, null, 2))}</div>`
         : "";
 
-    const actionMarkup = minimalViewEnabled
+    const actionMarkup = useCompactActions
       ? `
         <div class="item-actions item-actions--minimal">
           <a class="action-button action-button--icon" data-role="open-target" href="${escapeHtml(targetUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t(language, "openTarget", { site: targetLabel }))}" aria-label="${escapeHtml(t(language, "openTarget", { site: targetLabel }))}">↗</a>
           <a class="action-button action-button--icon" data-role="search-target" href="${escapeHtml(targetSearchUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t(language, "searchTarget", { site: targetLabel }))}" aria-label="${escapeHtml(t(language, "searchTarget", { site: targetLabel }))}">⌕</a>
-          <a class="action-button action-button--icon" data-role="google-link" href="${escapeHtml(googleUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t(language, "google"))}" aria-label="${escapeHtml(t(language, "google"))}">G</a>
           <button class="action-button action-button--icon" type="button" data-item-action="locate-item" data-role="locate-button-inline" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItem)}" aria-label="${escapeHtml(translation.locateItem)}">⌖</button>
           <button class="action-button action-button--icon" type="button" data-item-action="reload-item" data-role="reload-button-inline" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAll)}" aria-label="${escapeHtml(translation.reloadAll)}">↻</button>
         </div>`
@@ -681,10 +684,14 @@
 
     return `
       <article class="item-card ${entry.isVisible ? "is-visible" : ""}" data-source-id="${escapeHtml(item.sourceId)}" data-item-fingerprint="${escapeHtml(fingerprint)}" data-guide-number="${guideNumber != null ? escapeHtml(String(guideNumber)) : ""}">
-        <div class="item-tools">
+        ${
+          showCornerTools
+            ? `<div class="item-tools">
           <button class="icon-button item-tool" data-item-action="reload-item" data-role="reload-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAll)}">${escapeHtml(t(language, "reloadItem"))}</button>
           <button class="icon-button item-tool" data-item-action="locate-item" data-role="locate-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItem)}">⌖</button>
-        </div>
+        </div>`
+            : ""
+        }
         <div class="item-top">
           <div class="thumb ${item.imageUrl ? "" : "is-broken"}">
             ${imageMarkup}
@@ -817,6 +824,17 @@
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
+  }
+
+  function themeIconFor(mode) {
+    switch (mode) {
+      case "dark":
+        return "☾";
+      case "light":
+        return "☀";
+      default:
+        return "◐";
+    }
   }
 
   function findPageViewSourceId(page, state) {

@@ -451,7 +451,7 @@
     document.documentElement.dataset.theme = getEffectiveTheme(state?.themeMode);
     const fontScale = Number.isFinite(state?.fontScale) ? state.fontScale : 0;
     document.body.style.setProperty("--font-scale-step", String(fontScale));
-    document.body.style.setProperty("--panel-font-size", `${clamp(14 + fontScale, 11, 22)}px`);
+    document.body.style.setProperty("--items-font-size", `${clamp(14 + fontScale, 11, 22)}px`);
     document.body.style.setProperty("--card-padding", `${clamp(12 + fontScale, 8, 20)}px`);
     document.body.style.setProperty("--thumb-size", `${clamp(58 + fontScale * 4, 42, 84)}px`);
     document.body.style.setProperty("--tool-size", `${clamp(30 + fontScale * 2, 24, 40)}px`);

@@ -13,6 +13,7 @@
   --warn: #f4c152;
   --bad: #ff7a7a;
   --panel-font-size: 14px;
+  --items-font-size: 14px;
   --card-padding: 12px;
   --thumb-size: 58px;
   --tool-size: 30px;
@@ -163,9 +164,7 @@ html[dir="ltr"] .brand-block > div {
 
 .panel-header p,
 .settings-help,
-.summary-card p,
-.item-meta,
-.item-subtitle {
+.summary-card p {
   margin: 0;
   color: var(--muted);
   font-size: 12px;
@@ -531,6 +530,7 @@ html[dir="ltr"] .brand-block > div {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   overflow-x: hidden;
+  font-size: var(--items-font-size);
 }
 
 .list.is-list {
@@ -600,7 +600,7 @@ html[dir="ltr"] .brand-block > div {
   background: rgba(255, 255, 255, 0.02);
   color: var(--muted);
   text-align: center;
-  font-size: 13px;
+  font-size: 0.93em;
   line-height: 1.7;
 }
 
@@ -636,7 +636,7 @@ html[dir="ltr"] .brand-block > div {
   white-space: normal;
   overflow: visible;
   line-height: 1.4;
-  font-size: 0.84rem;
+  font-size: 0.96em;
 }
 
 .list.is-minimal .meta-row {
@@ -652,7 +652,7 @@ html[dir="ltr"] .brand-block > div {
 }
 
 .list.is-minimal .price-value {
-  font-size: 0.78rem;
+  font-size: 0.89em;
 }
 
 .list.is-minimal .item-actions {
@@ -694,7 +694,7 @@ html[dir="ltr"] .brand-block > div {
 .detail-group-title {
   margin: 4px 4px 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.79em;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -727,7 +727,7 @@ html[dir="ltr"] .brand-block > div {
   width: var(--tool-size);
   height: var(--tool-size);
   border-radius: var(--tool-radius);
-  font-size: 0.86rem;
+  font-size: 0.98em;
 }
 
 .guide-chip {
@@ -741,7 +741,7 @@ html[dir="ltr"] .brand-block > div {
   background: rgba(255, 140, 66, 0.16);
   border: 1px solid rgba(255, 140, 66, 0.32);
   color: #ffcfac;
-  font-size: 11px;
+  font-size: 0.79em;
   font-weight: 700;
 }
 
@@ -851,7 +851,7 @@ html[dir="ltr"] .brand-block > div {
   width: fit-content;
   padding: 4px 8px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 0.79em;
   font-weight: 700;
   transition: background-color 160ms ease, color 160ms ease, opacity 160ms ease;
 }
@@ -884,12 +884,20 @@ html[dir="ltr"] .brand-block > div {
 
 .item-title {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 1.05em;
   line-height: 1.65;
   min-width: 0;
   overflow-wrap: anywhere;
   word-break: break-word;
   white-space: normal;
+}
+
+.item-meta,
+.item-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86em;
+  line-height: 1.5;
 }
 
 .price-grid {
@@ -910,12 +918,12 @@ html[dir="ltr"] .brand-block > div {
   display: block;
   margin-bottom: 4px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.79em;
 }
 
 .price-value {
   display: block;
-  font-size: 0.84rem;
+  font-size: 0.96em;
   font-weight: 700;
   line-height: 1.5;
   overflow-wrap: anywhere;
@@ -937,7 +945,7 @@ html[dir="ltr"] .brand-block > div {
   background: rgba(255, 140, 66, 0.14);
   border: 1px solid rgba(255, 140, 66, 0.24);
   color: #ffd4b0;
-  font-size: 10px;
+  font-size: 0.72em;
   font-weight: 700;
   line-height: 1.4;
 }
@@ -945,7 +953,7 @@ html[dir="ltr"] .brand-block > div {
 .price-extra-text {
   display: block;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 0.79em;
   line-height: 1.45;
 }
 
@@ -962,7 +970,7 @@ html[dir="ltr"] .brand-block > div {
   justify-content: center;
   padding: 8px 10px;
   border-radius: 11px;
-  font-size: 0.78rem;
+  font-size: 0.89em;
   font-weight: 700;
   text-decoration: none;
   min-width: 0;
@@ -975,7 +983,7 @@ html[dir="ltr"] .brand-block > div {
   min-width: 34px;
   height: 34px;
   padding: 0;
-  font-size: 0.9rem;
+  font-size: 1.03em;
 }
 
 :root[data-theme="light"] .status-chip.loading {
@@ -1004,7 +1012,7 @@ html[dir="ltr"] .brand-block > div {
   background: #0f1319;
   border: 1px solid rgba(255, 255, 255, 0.06);
   color: #aeb8c6;
-  font-size: 11px;
+  font-size: 0.79em;
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;

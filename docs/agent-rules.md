@@ -21,8 +21,15 @@
 - Ensure changing lang should not require refreshing.
 - Ensure in RTL the reload for each element should be on top right.
 - Ensure icon-first controls expose localized hover titles and aria labels based on selected language.
+- Ensure font scale affects list/item content only and must not resize header/settings sections.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T10:27:26+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
+- Summary: Scoped size scaling to item list typography by introducing `--items-font-size`, removed scale coupling from global panel text, and converted item/list text styles to `em` so item titles/meta/prices/actions scale consistently with size controls.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:3a19f53f37ef -->
+
 ### 2026-04-09T10:23:18+03:30
 - Changed files: `src/panel/panel.html`, `src/panel/panel.js`, `src/help/help.html`, `src/help/help.js`
 - Summary: Added centralized localized tooltip/ARIA wiring for panel and help icon controls, including settings toggles/layout/size actions and GitHub brand links, and removed hardcoded English title attributes from markup.
@@ -137,11 +144,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:bfe827b11b82 -->
 
-### 2026-04-08T22:06:17+03:30
-- Changed files: `src/panel/panel.js`, `src/panel/panel.css`, `src/help/help.css`
-- Summary: Improved light-theme contrast for the help page and panel hover states, forced top refresh to rebuild panel state with delayed follow-up refreshes, clamped item tools to the right side, and improved card text wrapping/visibility.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:9f9ad1d52c20 -->
-
 ## Last Updated
-- 2026-04-09T10:23:18+03:30
+- 2026-04-09T10:27:26+03:30

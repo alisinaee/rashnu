@@ -798,10 +798,6 @@
       match?.targetOriginalPriceText,
       language
     );
-    const debugMarkup =
-      state?.debugEnabled && match?.debug
-        ? `<div class="debug-box">${escapeHtml(JSON.stringify(match.debug, null, 2))}</div>`
-        : "";
     const statusTooltip = `${t(language, `status_${status}`)} · ${
       translation[`statusHint_${status}`] || translation.statusHint_default
     }`;
@@ -884,7 +880,6 @@
         </div>
 
         ${actionMarkup}
-        <div data-role="debug-slot">${debugMarkup}</div>
       </article>
     `;
   }
@@ -1135,8 +1130,7 @@
       sellerCount: entry?.match?.sellerCount || 0,
       targetUrl: entry?.match?.targetUrl || "",
       searchUrl: entry?.match?.searchUrl || "",
-      googleUrl: entry?.match?.googleUrl || "",
-      debug: state?.debugEnabled ? JSON.stringify(entry?.match?.debug || null) : ""
+      googleUrl: entry?.match?.googleUrl || ""
     });
   }
 

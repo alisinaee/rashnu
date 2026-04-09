@@ -40,8 +40,15 @@
 - Ensure Debug mode exposes an export action so users can download and share diagnostic logs.
 - Ensure Torob SPA/listing URL changes trigger immediate page-state resync to avoid carrying stale products across categories.
 - Ensure background row sync removes untouched source IDs (instead of only marking invisible) to prevent stale panel items and duplicate guide mappings.
+- Ensure debug mode does not render per-item raw JSON/debug payload blocks inside result cards.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T12:05:45+03:30
+- Changed files: `src/panel/panel.js`
+- Summary: Removed per-item raw debug payload rendering from panel cards while keeping debug mode available for diagnostics/status behavior.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:bbf24e372e79 -->
+
 ### 2026-04-09T12:04:18+03:30
 - Changed files: `src/content.js`, `src/background.js`
 - Summary: Added explicit SPA navigation URL-change detection in content script (`pushState`/`replaceState`/`popstate`/poll) and changed background sync reconciliation to delete untouched rows and related caches so old-page products cannot persist in panel state.
@@ -156,11 +163,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:06e8b6471d97 -->
 
-### 2026-04-09T10:04:13+03:30
-- Changed files: `src/panel/panel.html`, `src/panel/panel.css`, `src/panel/panel.js`
-- Summary: Replaced wide Theme and Language controls with compact icon-style quick action buttons in one row, and moved labels to tooltips/ARIA so settings consumes less vertical space.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:7c40f783a0cf -->
-
 ## Last Updated
-- 2026-04-09T12:04:18+03:30
+- 2026-04-09T12:05:45+03:30

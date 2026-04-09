@@ -28,8 +28,15 @@
 - Ensure logger setup supports one-time autostart installation so users avoid per-session manual helper launch.
 - Ensure compact action icons remain slightly larger for readability, and normal list/grid cards compress subtitle/metrics into one-row chips.
 - Ensure search-on-site and reload icons stay visually larger/heavier than default compact icon sizing.
+- Ensure confidence is displayed adjacent to status in the top meta row across all layouts, and remove long subtitle chips below titles.
 
 ## Recent Changes (Last 20)
+### 2026-04-09T10:51:14+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
+- Summary: Removed the long subtitle chip below item titles and moved confidence (plus retries when available) into compact chips beside status in the meta row for list/grid and minimal/normal views.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:a3014510f7fa -->
+
 ### 2026-04-09T10:46:57+03:30
 - Changed files: `src/panel/panel.css`
 - Summary: Increased visual weight and size for compact search-target and reload icons (including corner reload tool) to improve legibility in minimal/grid action rows.
@@ -144,11 +151,5 @@
 - Behavior impact: Recorded code-level deltas for future AI context.
 <!-- fingerprint:e2c9f33fefef -->
 
-### 2026-04-09T09:35:21+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Hardened grid layout against clipped/overlapping cards by using max-content implicit rows, max-content grid cards, and non-shrinking direct children so each product card keeps full vertical content.
-- Behavior impact: Recorded code-level deltas for future AI context.
-<!-- fingerprint:956714b29c61 -->
-
 ## Last Updated
-- 2026-04-09T10:46:57+03:30
+- 2026-04-09T10:51:14+03:30

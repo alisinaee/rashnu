@@ -761,30 +761,10 @@
       state?.debugEnabled && match?.debug
         ? `<div class="debug-box">${escapeHtml(JSON.stringify(match.debug, null, 2))}</div>`
         : "";
-    const chips = [];
-    if (targetTitle) {
-      chips.push(
-        `<span class="item-info-chip item-info-chip--target" data-role="item-subtitle-chip" title="${escapeHtml(
-          targetTitle
-        )}" aria-label="${escapeHtml(targetTitle)}">${escapeHtml(targetTitle)}</span>`
-      );
-    }
-    chips.push(
-      `<span class="item-info-chip item-info-chip--metric" data-role="item-confidence-chip">${escapeHtml(
-        t(language, "confidenceChip", { value: confidence })
-      )}</span>`
-    );
-    if (entry?.retryCountMatch) {
-      chips.push(
-        `<span class="item-info-chip item-info-chip--metric" data-role="item-retries-chip">${escapeHtml(
-          t(language, "retriesChip", { value: `${entry.retryCountMatch}/3` })
-        )}</span>`
-      );
-    }
-    const infoChipsMarkup = `<div class="item-info-chips" data-role="item-info-chips">${chips.join("")}</div>`;
     const statusTooltip = `${t(language, `status_${status}`)} · ${
       translation[`statusHint_${status}`] || translation.statusHint_default
     }`;
+    const confidenceTooltip = `${t(language, "confidence", { value: confidence })}`;
     const guideTooltip =
       guideNumber != null
         ? t(language, "guideNumberHint", {
@@ -836,9 +816,16 @@
             <div class="meta-row">
               ${guideNumber != null ? `<span class="guide-chip" data-role="guide-number" title="${escapeHtml(guideTooltip)}" aria-label="${escapeHtml(guideTooltip)}">#${escapeHtml(String(guideNumber))}</span>` : `<span class="guide-chip is-empty" data-role="guide-number"></span>`}
               <span class="status-chip ${escapeHtml(status)}" data-role="status-chip" title="${escapeHtml(statusTooltip)}" aria-label="${escapeHtml(statusTooltip)}">${escapeHtml(t(language, `status_${status}`))}</span>
+              <span class="confidence-chip" data-role="confidence-chip" title="${escapeHtml(confidenceTooltip)}" aria-label="${escapeHtml(confidenceTooltip)}">${escapeHtml(t(language, "confidenceChip", { value: confidence }))}</span>
+              ${
+                entry?.retryCountMatch
+                  ? `<span class="retry-chip" data-role="retry-chip">${escapeHtml(
+                      t(language, "retriesChip", { value: `${entry.retryCountMatch}/3` })
+                    )}</span>`
+                  : ""
+              }
             </div>
             <h2 class="item-title" data-role="item-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h2>
-            ${infoChipsMarkup}
           </div>
         </div>
 

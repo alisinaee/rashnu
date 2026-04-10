@@ -6,12 +6,12 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   const CACHE_TTL_MS = 10 * 60 * 1000;
   const REQUEST_TIMEOUT_MS = 8000;
   const MAX_CONCURRENCY = 4;
-  const MAX_ROWS = 120;
   const MAX_LOG_ENTRIES = 500;
   const MAX_AUTO_RETRIES = 3;
   const LOG_STORAGE_KEY = "dirobLogs";
   const LOG_HELPER_BASE_URL = "http://127.0.0.1:45173";
   const LOG_FLUSH_BATCH_SIZE = 20;
+  const NAVIGATION_RESCAN_DEBOUNCE_MS = 220;
   const inFlightQueries = new Map();
   const inFlightSourceResolvers = new Map();
   const queue = [];
@@ -34,6 +34,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   let themeMode = "system";
   let logFlushTimer = null;
   let stateFlushTimer = null;
+  const navigationRescanDebounceTimers = new Map();
   let stateSnapshotSerial = 0;
   let logHelperStatus = {
     connected: false,
@@ -170,19 +171,18 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     notifyPanels();
   });
 
-  chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (typeof changeInfo.url === "string") {
+      handleTopLevelNavigationEvent(tabId, changeInfo.url, "tabs.onUpdated");
+      notifyPanels();
+      return;
+    }
+    if (changeInfo.status === "loading") {
       const state = ensureTabState(tabId);
-      if (state.pageUrl && state.pageUrl !== changeInfo.url) {
-        resetPageState(state);
-        state.pageKey = "";
-        state.pageUrl = changeInfo.url;
-        state.pageMode = "unsupported";
-        state.isSupported = false;
-      }
-      if (panelActive) {
-        softRescanTab(tabId).catch(() => {});
-      }
+      const nextUrl = tab?.url || state.pageUrl || "";
+      handleTopLevelNavigationEvent(tabId, nextUrl, "tabs.onUpdated.loading", {
+        status: "loading"
+      });
       notifyPanels();
       return;
     }
@@ -195,9 +195,40 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   });
 
   chrome.tabs.onRemoved.addListener((tabId) => {
+    const timer = navigationRescanDebounceTimers.get(tabId);
+    if (timer) {
+      clearTimeout(timer);
+      navigationRescanDebounceTimers.delete(tabId);
+    }
     tabStates.delete(tabId);
     notifyPanels();
   });
+
+  if (chrome.webNavigation?.onCommitted) {
+    chrome.webNavigation.onCommitted.addListener((details) => {
+      if (details.frameId !== 0 || typeof details.url !== "string") {
+        return;
+      }
+      handleTopLevelNavigationEvent(details.tabId, details.url, "webNavigation.onCommitted", {
+        transitionType: details.transitionType || null,
+        transitionQualifiers: details.transitionQualifiers || []
+      });
+      notifyPanels();
+    });
+  }
+
+  if (chrome.webNavigation?.onHistoryStateUpdated) {
+    chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
+      if (details.frameId !== 0 || typeof details.url !== "string") {
+        return;
+      }
+      handleTopLevelNavigationEvent(details.tabId, details.url, "webNavigation.onHistoryStateUpdated", {
+        transitionType: details.transitionType || null,
+        transitionQualifiers: details.transitionQualifiers || []
+      });
+      notifyPanels();
+    });
+  }
 
   chrome.runtime.onConnect.addListener((port) => {
     if (port?.name !== "dirob-panel") {
@@ -395,8 +426,23 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       const tabId = sender.tab?.id;
       if (tabId != null) {
         const state = ensureTabState(tabId);
+        syncStateToTabUrl(
+          tabId,
+          message.payload?.pageUrl || sender.tab?.url || "",
+          "page_context_message"
+        );
         const nextSite = message.payload?.site || "unsupported";
-        const nextPageUrl = message.payload?.pageUrl || sender.tab?.url || "";
+        const nextPageUrl = canonicalizeTrackedUrl(message.payload?.pageUrl || sender.tab?.url || "");
+        const currentPageUrl = canonicalizeTrackedUrl(state.pageUrl || "");
+        if (currentPageUrl && nextPageUrl && currentPageUrl !== nextPageUrl) {
+          addLog("info", "background", "page_context_url_switch", {
+            tabId,
+            previousPageUrl: currentPageUrl,
+            nextPageUrl
+          });
+          resetPageState(state);
+          state.pageKey = "";
+        }
         const nextPageKey =
           message.payload?.pageKey || `${nextSite}|${message.payload?.mode || "unsupported"}|${nextPageUrl}`;
         if (state.pageKey && state.pageKey !== nextPageKey) {
@@ -420,7 +466,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
           tabId,
           site: state.site,
           isSupported: state.isSupported,
-          pageUrl: state.pageUrl
+          pageUrl: state.pageUrl,
+          pageKey: state.pageKey,
+          incomingPageKey: message.payload?.pageKey || null
         });
         notifyPanels();
       }
@@ -432,10 +480,28 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       const tabId = sender.tab?.id;
       if (tabId != null) {
         const state = ensureTabState(tabId);
+        syncStateToTabUrl(
+          tabId,
+          message.payload?.pageUrl || sender.tab?.url || "",
+          "sync_items_message"
+        );
+        const syncPageUrl = canonicalizeTrackedUrl(
+          message.payload?.pageUrl || sender.tab?.url || state.pageUrl || ""
+        );
+        const statePageUrl = canonicalizeTrackedUrl(state.pageUrl || "");
+        if (statePageUrl && syncPageUrl && syncPageUrl !== statePageUrl) {
+          addLog("debug", "background", "stale_sync_url_ignored", {
+            tabId,
+            syncPageUrl,
+            statePageUrl
+          });
+          sendResponse({ ok: true, ignored: true });
+          return false;
+        }
         const syncPageKey =
           message.payload?.pageKey ||
           `${message.payload?.site || state.site}|${message.payload?.mode || state.pageMode || "unsupported"}|${
-            message.payload?.pageUrl || state.pageUrl || ""
+            syncPageUrl || statePageUrl || ""
           }`;
         if (state.pageKey && syncPageKey !== state.pageKey) {
           addLog("debug", "background", "stale_sync_ignored", {
@@ -449,7 +515,19 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         state.site = message.payload?.site || state.site;
         state.pageUrl = message.payload?.pageUrl || state.pageUrl;
         state.pageMode = message.payload?.mode || state.pageMode || "listing";
+        const incomingGuideDiagnostics = computeGuideDiagnostics(message.payload?.rows || [], "item");
+        if (incomingGuideDiagnostics.count && (!incomingGuideDiagnostics.startsAtOne || !incomingGuideDiagnostics.isContiguous)) {
+          addLog("warn", "background", "incoming_guide_sequence_anomaly", {
+            tabId,
+            pageKey: message.payload?.pageKey || null,
+            diagnostics: incomingGuideDiagnostics
+          });
+        }
         syncRowsIntoState(state, message.payload?.rows || []);
+        const stateGuideDiagnostics = computeGuideDiagnostics(
+          Array.from(state.rows.values()).map((row) => row.item),
+          null
+        );
         const previousActiveGuideNumber = state.activeGuideNumber;
         state.activeGuideNumber = normalizeGuideNumber(message.payload?.activeGuideNumber);
         state.activeSourceId = message.payload?.activeSourceId || findSourceIdByGuideNumber(state, state.activeGuideNumber);
@@ -472,7 +550,10 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         addLog("debug", "background", "sync_items", {
           tabId,
           site: state.site,
-          rows: state.rows.size
+          rows: state.rows.size,
+          pageKey: state.pageKey,
+          incomingGuideDiagnostics,
+          stateGuideDiagnostics
         });
         notifyPanels();
       }
@@ -484,10 +565,29 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       const tabId = sender.tab?.id;
       if (tabId != null && message.payload?.item) {
         const state = ensureTabState(tabId);
+        syncStateToTabUrl(
+          tabId,
+          message.payload?.pageUrl || sender.tab?.url || "",
+          "item_focus_message"
+        );
+        const focusPageUrl = canonicalizeTrackedUrl(
+          message.payload?.pageUrl || sender.tab?.url || state.pageUrl || ""
+        );
+        const statePageUrl = canonicalizeTrackedUrl(state.pageUrl || "");
+        if (statePageUrl && focusPageUrl && focusPageUrl !== statePageUrl) {
+          addLog("debug", "background", "stale_focus_url_ignored", {
+            tabId,
+            focusPageUrl,
+            statePageUrl,
+            sourceId: message.payload.item.sourceId
+          });
+          sendResponse({ ok: true, ignored: true });
+          return false;
+        }
         const focusPageKey =
           message.payload?.pageKey ||
           `${message.payload?.site || state.site}|${message.payload?.mode || state.pageMode || "unsupported"}|${
-            message.payload?.pageUrl || state.pageUrl || ""
+            focusPageUrl || statePageUrl || ""
           }`;
         if (state.pageKey && focusPageKey !== state.pageKey) {
           addLog("debug", "background", "stale_focus_ignored", {
@@ -588,6 +688,84 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       });
     }
     return tabStates.get(tabId);
+  }
+
+  function inferSiteFromUrl(url) {
+    try {
+      const hostname = new URL(String(url || "")).hostname.toLowerCase();
+      if (hostname.includes("digikala.com")) {
+        return "digikala";
+      }
+      if (hostname.includes("torob.com")) {
+        return "torob";
+      }
+    } catch (_error) {}
+    return "unsupported";
+  }
+
+  function canonicalizeTrackedUrl(url) {
+    if (typeof url !== "string" || !url) {
+      return "";
+    }
+    return globalThis.DirobNormalize.canonicalizeUrl(url, url) || url;
+  }
+
+  function handleTopLevelNavigationEvent(tabId, nextUrl, source, extraDetails = null) {
+    if (tabId == null || typeof nextUrl !== "string" || !nextUrl) {
+      return;
+    }
+
+    const canonicalUrl = canonicalizeTrackedUrl(nextUrl);
+    const state = ensureTabState(tabId);
+    const previousPageUrl = state.pageUrl || "";
+    const previousPageKey = state.pageKey || "";
+    const hasNavigationChange = previousPageUrl !== canonicalUrl;
+    const shouldReset = hasNavigationChange || Boolean(previousPageKey);
+
+    if (!shouldReset) {
+      if (panelActive) {
+        scheduleNavigationRescan(tabId);
+      }
+      return;
+    }
+
+    resetPageState(state);
+    state.pageKey = "";
+    state.pageUrl = canonicalUrl;
+    state.pageMode = "unsupported";
+    state.isSupported = false;
+    state.site = inferSiteFromUrl(canonicalUrl);
+
+    addLog("info", "background", "navigation_detected", {
+      tabId,
+      source,
+      previousPageUrl,
+      nextPageUrl: canonicalUrl,
+      previousPageKey: previousPageKey || null,
+      ...(extraDetails || {})
+    });
+
+    if (panelActive) {
+      scheduleNavigationRescan(tabId);
+    }
+  }
+
+  function scheduleNavigationRescan(tabId) {
+    if (tabId == null) {
+      return;
+    }
+    const existingTimer = navigationRescanDebounceTimers.get(tabId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+    const timerId = setTimeout(() => {
+      navigationRescanDebounceTimers.delete(tabId);
+      if (!panelActive) {
+        return;
+      }
+      forceRescanTab(tabId).catch(() => {});
+    }, NAVIGATION_RESCAN_DEBOUNCE_MS);
+    navigationRescanDebounceTimers.set(tabId, timerId);
   }
 
   function resetPageState(state) {
@@ -1276,6 +1454,73 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     return Math.round(parsed);
   }
 
+  function computeGuideDiagnostics(rows, itemKey = null) {
+    const guideNumbers = [];
+    const seenGuideNumbers = new Set();
+    const seenSourceIds = new Set();
+    let duplicateGuideCount = 0;
+    let duplicateSourceCount = 0;
+
+    for (const row of rows || []) {
+      const item = itemKey ? row?.[itemKey] : row;
+      const sourceId = String(item?.sourceId || "");
+      if (sourceId) {
+        if (seenSourceIds.has(sourceId)) {
+          duplicateSourceCount += 1;
+        } else {
+          seenSourceIds.add(sourceId);
+        }
+      }
+
+      const guideNumber = normalizeGuideNumber(item?.guideNumber);
+      if (!Number.isFinite(guideNumber)) {
+        continue;
+      }
+      guideNumbers.push(guideNumber);
+      if (seenGuideNumbers.has(guideNumber)) {
+        duplicateGuideCount += 1;
+      } else {
+        seenGuideNumbers.add(guideNumber);
+      }
+    }
+
+    if (!guideNumbers.length) {
+      return {
+        count: 0,
+        min: null,
+        max: null,
+        startsAtOne: false,
+        isContiguous: false,
+        duplicateGuideCount,
+        duplicateSourceCount
+      };
+    }
+
+    const sorted = [...guideNumbers].sort((a, b) => a - b);
+    const min = sorted[0];
+    const max = sorted[sorted.length - 1];
+    let isContiguous = true;
+    for (let index = 1; index < sorted.length; index += 1) {
+      if (sorted[index] === sorted[index - 1]) {
+        continue;
+      }
+      if (sorted[index] !== sorted[index - 1] + 1) {
+        isContiguous = false;
+        break;
+      }
+    }
+
+    return {
+      count: sorted.length,
+      min,
+      max,
+      startsAtOne: min === 1,
+      isContiguous,
+      duplicateGuideCount,
+      duplicateSourceCount
+    };
+  }
+
   function clampFontScale(value) {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) {
@@ -1371,6 +1616,12 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     const activeTab = await getActiveTab();
     const tabId = activeTab?.id;
     const state = tabId == null ? null : ensureTabState(tabId);
+    if (tabId != null && state) {
+      const urlSyncChanged = syncStateToTabUrl(tabId, activeTab?.url || "", "get_panel_state");
+      if (urlSyncChanged && panelActive) {
+        scheduleNavigationRescan(tabId);
+      }
+    }
     return {
       activeTabId: tabId || null,
       panelActive,
@@ -1389,6 +1640,42 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       logHelper: { ...logHelperStatus },
       page: serializePageState(state, activeTab)
     };
+  }
+
+  function syncStateToTabUrl(tabId, tabUrl, source) {
+    if (tabId == null || !tabUrl) {
+      return false;
+    }
+    const state = ensureTabState(tabId);
+    const canonicalTabUrl = canonicalizeTrackedUrl(tabUrl);
+    const canonicalStateUrl = canonicalizeTrackedUrl(state.pageUrl || "");
+
+    if (!canonicalStateUrl) {
+      state.pageUrl = canonicalTabUrl;
+      state.site = inferSiteFromUrl(canonicalTabUrl);
+      return false;
+    }
+
+    if (canonicalStateUrl === canonicalTabUrl) {
+      return false;
+    }
+
+    const previousPageUrl = state.pageUrl || "";
+    const previousPageKey = state.pageKey || "";
+    resetPageState(state);
+    state.pageKey = "";
+    state.pageUrl = canonicalTabUrl;
+    state.pageMode = "unsupported";
+    state.isSupported = false;
+    state.site = inferSiteFromUrl(canonicalTabUrl);
+    addLog("info", "background", "navigation_fallback_sync", {
+      tabId,
+      source,
+      previousPageUrl,
+      nextPageUrl: canonicalTabUrl,
+      previousPageKey: previousPageKey || null
+    });
+    return true;
   }
 
   function serializePageState(state, activeTab) {
@@ -1416,7 +1703,6 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         }
         return String(left.item?.sourceId || "").localeCompare(String(right.item?.sourceId || ""));
       })
-      .slice(0, MAX_ROWS)
       .map((row) => ({
         item: row.item,
         isVisible: row.isVisible,

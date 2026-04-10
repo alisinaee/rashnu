@@ -1,6 +1,11 @@
 (function () {
   "use strict";
 
+  if (globalThis.__dirobContentBooted) {
+    return;
+  }
+  globalThis.__dirobContentBooted = true;
+
   const extractor = globalThis.DirobListingExtractor;
   const logger = globalThis.DirobLogger;
   const mutationObserver = new MutationObserver(handleDomMutation);
@@ -9,6 +14,8 @@
   let observedElements = new WeakSet();
   let sourceIdToRecord = new Map();
   let rowState = new Map();
+  let guideSequenceBySourceId = new Map();
+  let nextGuideNumber = 1;
   let intersectionObserver = null;
   let debugEnabled = false;
   let selectionModeEnabled = false;
@@ -33,6 +40,8 @@
   let navigationRescanTimer = null;
   let navigationRescanAttempts = 0;
   let navigationRescanNonce = 0;
+  let navigationEpoch = 0;
+  let listingNavigationResetUntil = 0;
 
   boot().catch(() => {});
 
@@ -123,7 +132,10 @@
     logger.debug("content", "page_context", pageContext);
     await safeSendMessage({
       type: "DIROB_PAGE_CONTEXT",
-      payload: pageContext
+      payload: {
+        ...pageContext,
+        pageKey: currentPageKey
+      }
     });
   }
 
@@ -144,6 +156,16 @@
     if (revision !== refreshRevision) {
       return;
     }
+    const visibleRecordCount = records.reduce((count, record) => count + (computeRecordVisibility(record) ? 1 : 0), 0);
+    logger.debug("content", "scan_snapshot", {
+      pageKey: currentPageKey,
+      mode: pageContext.mode,
+      site: pageContext.site,
+      extractedCount: records.length,
+      visibleRecordCount,
+      sourceSample: records.slice(0, 6).map((record) => record?.item?.sourceId || "")
+    });
+    pruneStaleRows(records, pageContext);
     logger.debug("content", "refresh_cards", {
       mode: pageContext.mode,
       site: pageContext.site,
@@ -151,6 +173,12 @@
     });
 
     for (const record of records) {
+      const stableGuideNumber = assignStableGuideNumber(record.item.sourceId);
+      record.item = {
+        ...record.item,
+        guideNumber: stableGuideNumber,
+        position: stableGuideNumber - 1
+      };
       const existing = sourceIdToRecord.get(record.item.sourceId);
       if (!existing) {
         sourceIdToRecord.set(record.item.sourceId, record);
@@ -207,6 +235,121 @@
     }
 
     scheduleSync();
+  }
+
+  function pruneStaleRows(records, context) {
+    const inNavigationResetWindow = context?.mode === "listing" && Date.now() < listingNavigationResetUntil;
+    const effectiveRecords =
+      inNavigationResetWindow
+        ? records.filter((record) => {
+            const element = record?.element;
+            if (!(element instanceof Element)) {
+              return true;
+            }
+            const rect = element.getBoundingClientRect();
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+            return rect.bottom > 8 && rect.right > 0 && (viewportWidth <= 0 || rect.left < viewportWidth);
+          })
+        : records;
+    const recordsForReset = effectiveRecords.length ? effectiveRecords : records;
+
+    if (inNavigationResetWindow) {
+      logger.debug("content", "navigation_reset_window_snapshot", {
+        pageKey: currentPageKey,
+        totalRecords: records.length,
+        effectiveRecords: recordsForReset.length
+      });
+    }
+
+    const nextSourceIds = new Set();
+    for (const record of recordsForReset) {
+      const sourceId = record?.item?.sourceId;
+      if (sourceId) {
+        nextSourceIds.add(sourceId);
+      }
+    }
+
+    if (!nextSourceIds.size) {
+      if (context?.mode === "listing") {
+        clearTrackedRows();
+      }
+      return;
+    }
+
+    if (context?.mode === "listing") {
+      // Listing guide numbers should always mirror current DOM order and restart from 1.
+      const rebuiltGuideSequence = new Map();
+      let sequence = 1;
+      for (const record of recordsForReset) {
+        const sourceId = String(record?.item?.sourceId || "");
+        if (!sourceId || rebuiltGuideSequence.has(sourceId)) {
+          continue;
+        }
+        rebuiltGuideSequence.set(sourceId, sequence);
+        sequence += 1;
+      }
+      guideSequenceBySourceId = rebuiltGuideSequence;
+      nextGuideNumber = sequence;
+      logger.debug("content", "guide_sequence_rebuilt", {
+        pageKey: currentPageKey,
+        rebuiltCount: rebuiltGuideSequence.size,
+        nextGuideNumber,
+        guideDiagnostics: computeGuideDiagnostics(
+          Array.from(rebuiltGuideSequence.entries()).map(([sourceId, guideNumber]) => ({
+            sourceId,
+            guideNumber
+          }))
+        )
+      });
+    }
+
+    const removedSourceIds = [];
+    for (const [sourceId, record] of sourceIdToRecord.entries()) {
+      if (nextSourceIds.has(sourceId)) {
+        continue;
+      }
+      removedSourceIds.push(sourceId);
+      untrackRecord(sourceId, record);
+    }
+
+    if (focusedSourceId && !nextSourceIds.has(focusedSourceId)) {
+      focusedSourceId = null;
+      clearHighlightedElement();
+    }
+
+    if (removedSourceIds.length) {
+      logger.debug("content", "stale_rows_pruned", {
+        removed: removedSourceIds.length
+      });
+    }
+  }
+
+  function clearTrackedRows() {
+    const removedCount = sourceIdToRecord.size;
+    if (!removedCount) {
+      return;
+    }
+    for (const [sourceId, record] of sourceIdToRecord.entries()) {
+      untrackRecord(sourceId, record);
+    }
+    guideSequenceBySourceId = new Map();
+    nextGuideNumber = 1;
+    focusedSourceId = null;
+    clearHighlightedElement();
+    logger.debug("content", "tracked_rows_cleared", {
+      removed: removedCount
+    });
+  }
+
+  function untrackRecord(sourceId, record) {
+    if (record?.element && intersectionObserver) {
+      try {
+        intersectionObserver.unobserve(record.element);
+      } catch (_error) {}
+    }
+    sourceIdToRecord.delete(sourceId);
+    rowState.delete(sourceId);
+    guideSequenceBySourceId.delete(sourceId);
   }
 
   function handleIntersection(entries) {
@@ -298,7 +441,7 @@
 
     syncTimer = window.setTimeout(async () => {
       syncTimer = null;
-      const rows = Array.from(rowState.values()).map((row) => ({
+      const rows = collectSyncRows().map((row) => ({
         item: {
           ...row.item
         },
@@ -341,11 +484,120 @@
           rows
         }
       });
+      const guideDiagnostics = computeGuideDiagnostics(
+        rows.map((row) => ({
+          sourceId: row.item.sourceId,
+          guideNumber: row.item.guideNumber
+        }))
+      );
+      if (guideDiagnostics.count && (!guideDiagnostics.startsAtOne || !guideDiagnostics.isContiguous)) {
+        logger.warn("content", "guide_sequence_anomaly", {
+          pageKey: currentPageKey,
+          diagnostics: guideDiagnostics
+        });
+      }
       logger.debug("content", "sync_sent", {
+        pageKey: currentPageKey,
         site: pageContext?.site || "unsupported",
-        rows: rows.length
+        rows: rows.length,
+        trackedRows: rowState.size,
+        guideDiagnostics
       });
     }, 250);
+  }
+
+  function collectSyncRows() {
+    const trackedRows = Array.from(rowState.values());
+    return trackedRows.sort((left, right) => {
+      const leftGuide = Number.isFinite(left.item?.guideNumber) ? left.item.guideNumber : Number.MAX_SAFE_INTEGER;
+      const rightGuide = Number.isFinite(right.item?.guideNumber) ? right.item.guideNumber : Number.MAX_SAFE_INTEGER;
+      if (leftGuide !== rightGuide) {
+        return leftGuide - rightGuide;
+      }
+      return String(left.item?.sourceId || "").localeCompare(String(right.item?.sourceId || ""));
+    });
+  }
+
+  function assignStableGuideNumber(sourceId) {
+    const normalizedSourceId = String(sourceId || "");
+    if (!normalizedSourceId) {
+      const fallback = nextGuideNumber;
+      nextGuideNumber += 1;
+      return fallback;
+    }
+    const existing = guideSequenceBySourceId.get(normalizedSourceId);
+    if (Number.isFinite(existing) && existing > 0) {
+      return existing;
+    }
+    const assigned = nextGuideNumber;
+    nextGuideNumber += 1;
+    guideSequenceBySourceId.set(normalizedSourceId, assigned);
+    return assigned;
+  }
+
+  function computeGuideDiagnostics(items) {
+    const guideNumbers = [];
+    const seenGuideNumbers = new Set();
+    const seenSourceIds = new Set();
+    let duplicateGuideCount = 0;
+    let duplicateSourceCount = 0;
+
+    for (const item of items || []) {
+      const sourceId = String(item?.sourceId || "");
+      if (sourceId) {
+        if (seenSourceIds.has(sourceId)) {
+          duplicateSourceCount += 1;
+        } else {
+          seenSourceIds.add(sourceId);
+        }
+      }
+      const guideNumber = Number(item?.guideNumber);
+      if (!Number.isFinite(guideNumber)) {
+        continue;
+      }
+      guideNumbers.push(guideNumber);
+      if (seenGuideNumbers.has(guideNumber)) {
+        duplicateGuideCount += 1;
+      } else {
+        seenGuideNumbers.add(guideNumber);
+      }
+    }
+
+    if (!guideNumbers.length) {
+      return {
+        count: 0,
+        min: null,
+        max: null,
+        startsAtOne: false,
+        isContiguous: false,
+        duplicateGuideCount,
+        duplicateSourceCount
+      };
+    }
+
+    const sorted = [...guideNumbers].sort((a, b) => a - b);
+    const min = sorted[0];
+    const max = sorted[sorted.length - 1];
+    let isContiguous = true;
+    for (let index = 1; index < sorted.length; index += 1) {
+      if (sorted[index] === sorted[index - 1]) {
+        continue;
+      }
+      if (sorted[index] !== sorted[index - 1] + 1) {
+        isContiguous = false;
+        break;
+      }
+    }
+
+    return {
+      count: sorted.length,
+      min,
+      max,
+      startsAtOne: min === 1,
+      isContiguous,
+      duplicateGuideCount,
+      duplicateSourceCount
+    };
   }
 
   function handleDomMutation(mutations) {
@@ -366,6 +618,7 @@
   }
 
   async function handleForcedRescan() {
+    listingNavigationResetUntil = Date.now() + 7000;
     resetLocalState();
     pageContext = extractor.getPageContext();
     await syncSettings();
@@ -376,6 +629,7 @@
   }
 
   async function handleSoftRescan() {
+    listingNavigationResetUntil = Date.now() + 7000;
     pageContext = extractor.getPageContext();
     await syncSettings();
     await notifyPageState();
@@ -429,13 +683,22 @@
 
     const originalPushState = history.pushState;
     const originalReplaceState = history.replaceState;
-    const handleLocationChange = () => {
-      if (lastKnownHref === location.href) {
+    const handleLocationChange = (force = false, source = "unknown") => {
+      if (!force && lastKnownHref === location.href) {
         return;
       }
       lastKnownHref = location.href;
+      listingNavigationResetUntil = Date.now() + 7000;
+      navigationEpoch += 1;
       resetLocalState();
-      notifyPageState().catch(() => {});
+      notifyPageState()
+        .then(() => sendEmptySyncSnapshot(pageContext))
+        .catch(() => {});
+      logger.debug("content", "navigation_reset", {
+        source,
+        href: location.href,
+        navigationEpoch
+      });
       if (panelActive) {
         scheduleNavigationRescan();
       }
@@ -443,23 +706,27 @@
 
     history.pushState = function patchedPushState(...args) {
       const result = originalPushState.apply(this, args);
-      handleLocationChange();
+      handleLocationChange(true, "pushState");
       return result;
     };
 
     history.replaceState = function patchedReplaceState(...args) {
       const result = originalReplaceState.apply(this, args);
-      handleLocationChange();
+      handleLocationChange(true, "replaceState");
       return result;
     };
 
-    window.addEventListener("popstate", handleLocationChange, true);
-    window.addEventListener("hashchange", handleLocationChange, true);
+    window.addEventListener("popstate", () => handleLocationChange(true, "popstate"), true);
+    window.addEventListener("hashchange", () => handleLocationChange(true, "hashchange"), true);
     window.addEventListener(
       "pageshow",
-      () => {
+      (event) => {
+        if (event?.persisted) {
+          handleLocationChange(true, "pageshow.persisted");
+          return;
+        }
         if (lastKnownHref !== location.href) {
-          handleLocationChange();
+          handleLocationChange(true, "pageshow.href_changed");
           return;
         }
         if (panelActive) {
@@ -469,7 +736,7 @@
       true
     );
 
-    locationPollTimer = window.setInterval(handleLocationChange, 800);
+    locationPollTimer = window.setInterval(() => handleLocationChange(false, "location_poll"), 800);
   }
 
   function scheduleNavigationRescan() {
@@ -556,7 +823,7 @@
   }
 
   function buildPageKey(context) {
-    return `${context.site}|${context.mode}|${context.pageUrl}`;
+    return `${context.site}|${context.mode}|${context.pageUrl}|${navigationEpoch}`;
   }
 
   function resetLocalStateIfNeeded(context) {
@@ -577,11 +844,17 @@
     clearGuideBadges();
     sourceIdToRecord = new Map();
     rowState = new Map();
+    guideSequenceBySourceId = new Map();
+    nextGuideNumber = 1;
     observedElements = new WeakSet();
     focusedSourceId = null;
     lastPageContextSignature = "";
     lastSyncSignature = "";
     refreshRevision += 1;
+    logger.debug("content", "local_state_reset", {
+      pageKey: currentPageKey,
+      href: location.href
+    });
     if (intersectionObserver) {
       intersectionObserver.disconnect();
       intersectionObserver = new IntersectionObserver(handleIntersection, {
@@ -755,6 +1028,30 @@
       }
       element.removeAttribute("data-dirob-prev-position");
       element.removeAttribute("data-dirob-guide-owner");
+    });
+  }
+
+  async function sendEmptySyncSnapshot(context) {
+    if (!panelActive) {
+      return;
+    }
+    const snapshot = context || extractor.getPageContext();
+    const snapshotPageKey = buildPageKey(snapshot);
+    await safeSendMessage({
+      type: "DIROB_SYNC_ITEMS",
+      payload: {
+        pageKey: snapshotPageKey,
+        pageUrl: snapshot?.pageUrl || location.href,
+        site: snapshot?.site || "unsupported",
+        mode: snapshot?.mode || "unsupported",
+        activeGuideNumber: null,
+        activeSourceId: null,
+        rows: []
+      }
+    });
+    logger.debug("content", "sync_cleared", {
+      site: snapshot?.site || "unsupported",
+      mode: snapshot?.mode || "unsupported"
     });
   }
 

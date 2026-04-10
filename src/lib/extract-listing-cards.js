@@ -103,6 +103,9 @@
     const seen = new Set();
 
     for (const link of links) {
+      if (!isNodeRendered(link, { minWidth: 2, minHeight: 2 })) {
+        continue;
+      }
       const href = normalizeApi.canonicalizeUrl(link.getAttribute("href"), location.href);
       if (!href) {
         continue;
@@ -268,6 +271,9 @@
     if (!(element instanceof HTMLElement)) {
       return false;
     }
+    if (!isNodeRendered(element, { minWidth: 120, minHeight: 120 })) {
+      return false;
+    }
 
     const rect = element.getBoundingClientRect();
     if (rect.width < 120 || rect.height < 120) {
@@ -286,13 +292,16 @@
   }
 
   function extractCardData(cardElement, position, site) {
+    if (!isNodeRendered(cardElement, { minWidth: 80, minHeight: 80 })) {
+      return null;
+    }
     const productLinkSelector = LINK_SELECTORS[site];
     const link =
       cardElement.matches(productLinkSelector)
         ? cardElement
         : cardElement.querySelector(productLinkSelector);
 
-    if (!link) {
+    if (!link || !isNodeRendered(link, { minWidth: 2, minHeight: 2 })) {
       return null;
     }
 
@@ -352,6 +361,9 @@
 
     for (const link of links) {
       const container = findCardContainer(link, context.site);
+      if (!isNodeRendered(container, { minWidth: 80, minHeight: 80 })) {
+        continue;
+      }
       if (seenElements.has(container)) {
         continue;
       }
@@ -1085,6 +1097,26 @@
 
   function isIgnoredNode(node) {
     return Boolean(node?.closest?.(DIROB_IGNORE_SELECTOR));
+  }
+
+  function isNodeRendered(node, options = {}) {
+    if (!(node instanceof Element) || !node.isConnected || isIgnoredNode(node)) {
+      return false;
+    }
+    const style = window.getComputedStyle(node);
+    if (!style || style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") {
+      return false;
+    }
+    const minWidth = Number.isFinite(options.minWidth) ? options.minWidth : 1;
+    const minHeight = Number.isFinite(options.minHeight) ? options.minHeight : 1;
+    const rect = node.getBoundingClientRect();
+    if (!Number.isFinite(rect.width) || !Number.isFinite(rect.height)) {
+      return false;
+    }
+    if (rect.width < minWidth || rect.height < minHeight) {
+      return false;
+    }
+    return true;
   }
 
   function nodeText(node) {

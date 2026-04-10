@@ -805,13 +805,16 @@
     const item = entry.item;
     const match = entry.match;
     const sourceLabel = siteLabelFor(item.sourceSite, language);
+    const sourceIconUrl = siteIconFor(item.sourceSite);
     const targetSite = match?.targetSite || (item.sourceSite === "torob" ? "digikala" : "torob");
     const targetLabel = siteLabelFor(targetSite, language);
+    const targetIconUrl = siteIconFor(targetSite);
     const status = entry?.isLoading ? "loading" : match?.status || "loading";
     const confidence =
       typeof match?.confidence === "number"
         ? `${Math.round(match.confidence * 100)}%`
         : translation.unknown;
+    const confidenceToneClass = classifyConfidenceTone(match?.confidence);
     const targetPrice =
       match?.targetPriceText || (status === "loading" ? translation.status_loading : translation.unknown);
     const targetTitle = match?.matchedTitle || translation.noExact;
@@ -827,7 +830,6 @@
         ? globalThis.DirobNormalize.buildTorobSearchUrl(item.title)
         : globalThis.DirobNormalize.buildDigikalaSearchUrl(item.title));
     const targetUrl = match?.targetUrl || targetSearchUrl;
-    const targetSiteMark = siteMarkFor(targetSite);
     const minimalViewEnabled = Boolean(state?.minimalViewEnabled);
     const isGridLayout = state?.layoutMode === "grid";
     const useCompactActions = minimalViewEnabled || isGridLayout;
@@ -860,19 +862,25 @@
       ? `
         <div class="item-actions item-actions--minimal">
           <a class="action-button action-button--icon" data-role="open-target" href="${escapeHtml(targetUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t(language, "openTargetHint", { site: targetLabel }))}" aria-label="${escapeHtml(t(language, "openTargetHint", { site: targetLabel }))}">
-            <span class="action-icon action-icon--site" aria-hidden="true">${escapeHtml(targetSiteMark)}</span>
+            <span class="action-icon action-icon--site" aria-hidden="true">${buildActionSiteIconMarkup(
+              targetLabel,
+              targetIconUrl
+            )}</span>
           </a>
           <a class="action-button action-button--icon" data-role="search-target" href="${escapeHtml(targetSearchUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t(language, "searchTargetHint", { site: targetLabel }))}" aria-label="${escapeHtml(t(language, "searchTargetHint", { site: targetLabel }))}">
-            <span class="action-icon action-icon--search" aria-hidden="true"><span class="action-icon__search">⌕</span><span class="action-icon__site">${escapeHtml(targetSiteMark)}</span></span>
+            <span class="action-icon action-icon--search" aria-hidden="true">${buildSearchIconMarkup()}${buildActionSiteIconMarkup(
+              targetLabel,
+              targetIconUrl
+            )}</span>
           </a>
           <a class="action-button action-button--icon" data-role="google-link" href="${escapeHtml(googleUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(translation.googleHint)}" aria-label="${escapeHtml(translation.googleHint)}">
-            <span class="action-icon action-icon--google" aria-hidden="true">G</span>
+            <span class="action-icon action-icon--google" aria-hidden="true">${buildGoogleIconMarkup()}</span>
           </a>
           <button class="action-button action-button--icon" type="button" data-item-action="locate-item" data-role="locate-button-inline" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItemHint)}" aria-label="${escapeHtml(translation.locateItemHint)}">
-            <span class="action-icon action-icon--locate" aria-hidden="true">◎</span>
+            <span class="action-icon action-icon--locate" aria-hidden="true">${buildLocateIconMarkup()}</span>
           </button>
           <button class="action-button action-button--icon" type="button" data-item-action="reload-item" data-role="reload-button-inline" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAllHint)}" aria-label="${escapeHtml(translation.reloadAllHint)}">
-            <span class="action-icon action-icon--reload" aria-hidden="true">⟳</span>
+            <span class="action-icon action-icon--reload" aria-hidden="true">${buildReloadIconMarkup()}</span>
           </button>
         </div>`
       : `
@@ -900,7 +908,7 @@
             <div class="meta-row">
               ${guideNumber != null ? `<span class="guide-chip" data-role="guide-number" title="${escapeHtml(guideTooltip)}" aria-label="${escapeHtml(guideTooltip)}">#${escapeHtml(String(guideNumber))}</span>` : `<span class="guide-chip is-empty" data-role="guide-number"></span>`}
               <span class="status-chip ${escapeHtml(status)}" data-role="status-chip" title="${escapeHtml(statusTooltip)}" aria-label="${escapeHtml(statusTooltip)}">${escapeHtml(t(language, `status_${status}`))}</span>
-              <span class="confidence-chip" data-role="confidence-chip" title="${escapeHtml(confidenceTooltip)}" aria-label="${escapeHtml(confidenceTooltip)}">${escapeHtml(t(language, "confidenceChip", { value: confidence }))}</span>
+              <span class="confidence-chip ${escapeHtml(confidenceToneClass)}" data-role="confidence-chip" title="${escapeHtml(confidenceTooltip)}" aria-label="${escapeHtml(confidenceTooltip)}">${escapeHtml(t(language, "confidenceChip", { value: confidence }))}</span>
               ${
                 entry?.retryCountMatch
                   ? `<span class="retry-chip" data-role="retry-chip">${escapeHtml(
@@ -915,13 +923,17 @@
 
         <div class="price-grid">
           <div class="price-box">
-            <span class="price-label">${escapeHtml(t(language, "sourcePrice", { site: sourceLabel }))}</span>
-            <span class="price-value" data-role="source-price">${escapeHtml(item.displayPriceText || translation.unknown)}</span>
+            <div class="price-main">
+              <span class="price-value" data-role="source-price">${escapeHtml(item.displayPriceText || translation.unknown)}</span>
+              ${buildPriceSiteBadgeMarkup(language, sourceLabel, sourceIconUrl)}
+            </div>
             <div data-role="source-extra">${sourceExtraMarkup}</div>
           </div>
           <div class="price-box">
-            <span class="price-label">${escapeHtml(t(language, "targetPrice", { site: targetLabel }))}</span>
-            <span class="price-value" data-role="target-price">${escapeHtml(targetPrice)}</span>
+            <div class="price-main">
+              <span class="price-value" data-role="target-price">${escapeHtml(targetPrice)}</span>
+              ${buildPriceSiteBadgeMarkup(language, targetLabel, targetIconUrl)}
+            </div>
             <div data-role="target-extra">${targetExtraMarkup}</div>
           </div>
         </div>
@@ -1203,6 +1215,55 @@
     return `<div class="price-extra">${parts.join("")}</div>`;
   }
 
+  function buildPriceSiteBadgeMarkup(language, siteLabel, iconUrl) {
+    if (iconUrl) {
+      const priceLabel = t(language, "sourcePrice", { site: siteLabel });
+      return `
+        <span class="price-site-badge" title="${escapeHtml(priceLabel)}" aria-label="${escapeHtml(priceLabel)}">
+          <img class="price-site-icon" src="${escapeHtml(iconUrl)}" alt="${escapeHtml(siteLabel)}" loading="lazy" decoding="async">
+        </span>
+      `;
+    }
+    return `<span class="price-site-badge price-site-badge--text">${escapeHtml(siteLabel)}</span>`;
+  }
+
+  function buildActionSiteIconMarkup(siteLabel, iconUrl) {
+    if (!iconUrl) {
+      return `<span class="action-site-fallback">${escapeHtml((siteLabel || "?").slice(0, 1))}</span>`;
+    }
+    return `<img class="action-site-icon" src="${escapeHtml(iconUrl)}" alt="${escapeHtml(siteLabel)}" loading="lazy" decoding="async">`;
+  }
+
+  function buildGoogleIconMarkup() {
+    const iconUrl = extensionAssetUrl("assets/site-icons/google-symbol.svg");
+    return `<img class="action-google-icon" src="${escapeHtml(iconUrl)}" alt="Google" loading="lazy" decoding="async">`;
+  }
+
+  function buildSearchIconMarkup() {
+    return `<svg class="action-symbol action-symbol--search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"></circle><line x1="20" y1="20" x2="15.8" y2="15.8"></line></svg>`;
+  }
+
+  function buildLocateIconMarkup() {
+    return `<svg class="action-symbol action-symbol--locate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="6"></circle><line x1="12" y1="3.5" x2="12" y2="7"></line><line x1="12" y1="17" x2="12" y2="20.5"></line><line x1="3.5" y1="12" x2="7" y2="12"></line><line x1="17" y1="12" x2="20.5" y2="12"></line></svg>`;
+  }
+
+  function buildReloadIconMarkup() {
+    return `<svg class="action-symbol action-symbol--reload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>`;
+  }
+
+  function classifyConfidenceTone(confidenceValue) {
+    if (!Number.isFinite(confidenceValue)) {
+      return "confidence-unknown";
+    }
+    if (confidenceValue < 0.4) {
+      return "confidence-low";
+    }
+    if (confidenceValue < 0.75) {
+      return "confidence-average";
+    }
+    return "confidence-good";
+  }
+
   function bindImageStates() {
     itemsList.querySelectorAll("[data-thumb]").forEach((image) => {
       const container = image.parentElement;
@@ -1247,14 +1308,21 @@
     return isEnglish ? "Unknown" : "نامشخص";
   }
 
-  function siteMarkFor(site) {
+  function siteIconFor(site) {
     if (site === "digikala") {
-      return "D";
+      return extensionAssetUrl("assets/site-icons/digikala-192.png");
     }
     if (site === "torob") {
-      return "T";
+      return extensionAssetUrl("assets/site-icons/torob-192.png");
     }
-    return "?";
+    return "";
+  }
+
+  function extensionAssetUrl(path) {
+    if (globalThis.chrome?.runtime?.getURL) {
+      return globalThis.chrome.runtime.getURL(path);
+    }
+    return `../../${path}`;
   }
 
   function getEffectiveTheme(themeMode) {

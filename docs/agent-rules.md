@@ -20,34 +20,74 @@
 - Ensure top reload should work without refreshing the page.
 - Ensure changing lang should not require refreshing.
 - Ensure in RTL the per-item corner tools (reload/find) should be on the left side to avoid overlap with title/status content.
-- Ensure icon-first controls expose localized hover titles and aria labels based on selected language.
-- Ensure font scale affects list/item content only and must not resize header/settings sections.
-- Ensure settings tooltips explain feature behavior (not just label text), and guide/status chips must expose explanatory tooltips.
-- Ensure compact item action icons use site-aware symbols (D/T, search+D/T, Google) with non-heavy reload iconography.
-- Ensure size scale range remains constrained to -5 through +5.
-- Ensure logger setup supports one-time autostart installation so users avoid per-session manual helper launch.
-- Ensure compact action icons remain slightly larger for readability, and normal list/grid cards compress subtitle/metrics into one-row chips.
-- Ensure search-on-site and reload icons stay visually larger/heavier than default compact icon sizing.
-- Ensure confidence is displayed adjacent to status in the top meta row across all layouts, and remove long subtitle chips below titles.
-- Ensure Persian UI text uses Vazir-family typography across panel/help/popup/sidebar surfaces.
-- Ensure guide-number click navigation adds a visible blink/pulse animation on the focused panel item after scroll.
-- Ensure guide-jump blink starts only after programmatic scroll settles.
-- Ensure guide-jump highlight combines overlay flash with border pulse for clearer focus indication.
-- Ensure README documents explicit manual Chrome load-unpacked steps for GitHub users.
-- Ensure README explicitly describes unofficial extension installation flow (`Developer mode` + `Load unpacked`) for Chrome users.
-- Ensure settings diagnostics text (listing hint, log meta, logger status/path) is visible only when Debug mode is enabled.
-- Ensure auto log capture/persistence is gated by both Debug and Auto Logs being enabled.
-- Ensure Debug mode exposes an export action so users can download and share diagnostic logs.
-- Ensure Torob SPA/listing URL changes trigger immediate page-state resync to avoid carrying stale products across categories.
-- Ensure background row sync removes untouched source IDs (instead of only marking invisible) to prevent stale panel items and duplicate guide mappings.
-- Ensure debug mode does not render per-item raw JSON/debug payload blocks inside result cards.
-- Ensure SPA URL changes trigger a short auto-rescan retry cycle so Dirob refreshes without manual page reload.
-- Ensure browser back/forward navigation triggers Dirob resync without requiring manual page refresh.
-- Ensure Dirob has zero on-page visual footprint when side panel is closed (no guide numbers/highlights until panel reopens).
-- Ensure Persian UI always uses bundled Vazir webfont files (not system-dependent fallback) across panel/help/sidebar/popup surfaces.
-- Ensure switch controls keep a fixed LTR thumb geometry so RTL pages never invert or overflow toggle thumbs.
 
 ## Recent Changes (Last 20)
+### 2026-04-10T22:07:36+03:30
+- Changed files: `README.md`, `manifest.json`, `src/background.js`, `src/help/help.html`, `src/help/help.js`, `src/lib/extract-listing-cards.js`, `src/lib/normalize.js`, `src/panel/panel.js`
+- Summary: Added source-site support for Emalls/Amazon/eBay in extractor/background, hardened Emalls matching with JSON+HTML fallback, improved price parsing, and refreshed panel/help/readme copy for 6 supported providers.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:5a2051ccdb69 -->
+
+### 2026-04-10T21:39:18+03:30
+- Changed files: `src/background.js`, `manifest.json`
+- Summary: Added anti-bot-aware marketplace fallback for Amazon/eBay: keep direct search-page fetch first, detect challenge/blocked responses, then fetch `r.jina.ai` mirror markdown and parse product title/price/url candidates for ranking. Added targeted debug logs for candidate source/count and proxy usage, plus host permission for `https://r.jina.ai/*`.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:fe07dbf15442 -->
+
+### 2026-04-10T21:12:36+03:30
+- Changed files: `src/background.js`
+- Summary: Fixed marketplace query translation resilience: when online translation is unreachable, Amazon/eBay now use a local heuristic Persian→English mapper (brand/category/model/storage keywords + digit normalization) so search URLs still become English-oriented instead of falling back to raw Persian text.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:3cbec8dd25f1 -->
+
+### 2026-04-10T21:03:19+03:30
+- Changed files: `src/background.js`, `manifest.json`
+- Summary: Added Persian/Arabic-to-English query translation for Amazon/eBay search URLs using cached Google Translate requests in background (`translate.googleapis.com`), with safe fallback to original query when translation fails. This ensures global marketplace searches are normalized toward English query text whenever possible.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:b84dc5c35bc4 -->
+
+### 2026-04-10T20:55:12+03:30
+- Changed files: `src/panel/panel.js`, `src/background.js`
+- Summary: Fixed English digit localization so Persian/Arabic numerals convert to real decimal digits (instead of ASCII code values), which corrected malformed Torob/Technolife price text in EN mode. Added Digikala match fallback on recoverable transport errors (`network_error`, `timeout`, retryable HTTP), returning a stable search-only result instead of hard error status.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:f7e0cc4d4e43 -->
+
+### 2026-04-10T20:36:37+03:30
+- Changed files: `src/background.js`, `src/lib/normalize.js`, `src/panel/panel.html`, `src/panel/panel.js`, `src/help/help.js`, `manifest.json`, `README.md`, `assets/site-icons/emalls.svg`, `assets/site-icons/amazon.svg`, `assets/site-icons/ebay.svg`
+- Summary: Expanded provider registry from 3 to 6 providers and added `emalls`, `amazon`, and `ebay` as target providers. Implemented Emalls API search via `/_Search.ashx` and credential-aware Amazon/eBay placeholders that safely return fallback `searchUrl` results with explicit reasons when credentials are missing.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:6f8c19a2db91 -->
+
+### 2026-04-10T12:03:02+03:30
+- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
+- Summary: Removed top per-item status/confidence labels from cards and moved confidence display to per-provider badges inside price boxes, so confidence is shown provider-by-provider alongside provider icons.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:f30500fc7d35 -->
+
+### 2026-04-10T11:56:49+03:30
+- Changed files: `src/background.js`, `src/panel/panel.js`, `src/panel/panel.html`, `src/panel/panel.css`
+- Summary: Changed matching/panel from single-target view to multi-provider display per item: fetch all enabled target providers, store per-site results, and render a price section for each active provider (source + enabled targets).
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:ed485b497fe2 -->
+
+### 2026-04-10T11:51:21+03:30
+- Changed files: `src/background.js`, `src/panel/panel.js`, `src/panel/panel.html`, `src/panel/panel.css`, `manifest.json`, `src/lib/normalize.js`, `src/lib/extract-listing-cards.js`, `assets/site-icons/technolife-192.png`
+- Summary: Kept Digikala and enabled all 3 providers (Torob, Digikala, Technolife) with per-provider settings for search-button availability and price visibility; matching now uses enabled provider order/fallbacks, and panel settings include provider toggles.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:a31bb44b5d35 -->
+
+### 2026-04-10T11:41:33+03:30
+- Changed files: `manifest.json`, `src/lib/normalize.js`, `src/lib/extract-listing-cards.js`, `src/panel/panel.js`, `assets/site-icons/technolife-192.png`
+- Summary: Enabled Technolife as a full source site: content script host match, technolife source IDs, listing/detail extraction via DOM + __NEXT_DATA__, upgraded technolife icon asset, and panel unsupported text updated.
+- Behavior impact: Recorded code-level deltas for future AI context.
+<!-- fingerprint:e33854a08c5c -->
+
+### 2026-04-10T11:21:02+03:30
+- Changed files: `manifest.json`, `src/background.js`, `src/lib/normalize.js`, `src/panel/panel.js`
+- Summary: Added Technolife API-backed provider fallback via Next.js data endpoint, with manifest permissions, panel label/icon/search support, and normalization helpers.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:46b2841747e6 -->
+
 ### 2026-04-09T13:01:28+03:30
 - Changed files: `src/panel/panel.css`
 - Summary: Switched per-item corner tool anchoring to logical inline-end so in RTL they render on the left side, avoiding overlap on the right.
@@ -102,71 +142,5 @@
 - Behavior impact: Added or refreshed 3 behavior rule(s) from user instructions.
 <!-- fingerprint:b46633e2a343 -->
 
-### 2026-04-09T11:05:10+03:30
-- Changed files: `src/panel/panel.css`, `README.md`
-- Summary: Upgraded guide-jump feedback from border-only blink to combined overlay+border pulse animation, and expanded README with step-by-step manual Chrome installation (`chrome://extensions`, developer mode, load unpacked, reload workflow).
-- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
-<!-- fingerprint:d13c1835b8bf -->
-
-### 2026-04-09T10:59:34+03:30
-- Changed files: `src/panel/panel.js`
-- Summary: Delayed guide-jump blink trigger until programmatic scroll completion by adding a scroll-done callback path in `programmaticScrollTo`.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:e8c35ce46e42 -->
-
-### 2026-04-09T10:57:37+03:30
-- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
-- Summary: Added a guide-jump blink animation path (`is-guide-jump`) triggered when panel focus is requested from website guide-number clicks, including a two-pulse overlay effect for clear target emphasis.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:926ccdad4de7 -->
-
-### 2026-04-09T10:55:33+03:30
-- Changed files: `src/panel/panel.css`, `src/help/help.css`, `src/sidebar.css`, `src/popup/popup.html`
-- Summary: Added Persian-language font overrides to use the Vazir family stack (`Vazir`, `Vazirmatn`, fallbacks) while preserving the existing English font stack.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:aa9bf96f491f -->
-
-### 2026-04-09T10:51:14+03:30
-- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
-- Summary: Removed the long subtitle chip below item titles and moved confidence (plus retries when available) into compact chips beside status in the meta row for list/grid and minimal/normal views.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:a3014510f7fa -->
-
-### 2026-04-09T10:46:57+03:30
-- Changed files: `src/panel/panel.css`
-- Summary: Increased visual weight and size for compact search-target and reload icons (including corner reload tool) to improve legibility in minimal/grid action rows.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:ec5ff8b57b07 -->
-
-### 2026-04-09T10:44:05+03:30
-- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
-- Summary: Increased compact action icon sizing for better readability and replaced normal-mode subtitle/meta text lines with a single-row chip strip (target/confidence/retries) to save vertical space in both list and grid cards.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:d5de93f56de9 -->
-
-### 2026-04-09T10:41:09+03:30
-- Changed files: `run-dirob-helper`, `src/panel/panel.js`, `README.md`
-- Summary: Added helper lifecycle commands (`--install-autostart`, `--uninstall-autostart`, `--status`) backed by a macOS LaunchAgent for persistent logger startup, and updated panel/README guidance to prefer one-time autostart setup over repeated manual runs.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:0ea5ee888cfa -->
-
-### 2026-04-09T10:37:27+03:30
-- Changed files: `src/background.js`
-- Summary: Tightened global font-scale clamp to enforce a hard UI range of `-5..+5` for panel size adjustments.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:e5f9f6b78683 -->
-
-### 2026-04-09T10:35:44+03:30
-- Changed files: `src/panel/panel.js`, `src/panel/panel.css`, `src/panel/panel.html`
-- Summary: Expanded localized tooltip/ARIA coverage with detailed behavior descriptions for top controls and settings toggles, added tooltip explanations for guide numbers and status chips, and redesigned compact action icons to use site-aware marks (D/T, search+D/T, Google, locate, lighter reload symbol).
-- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
-<!-- fingerprint:7bc31b5b1f14 -->
-
-### 2026-04-09T10:27:26+03:30
-- Changed files: `src/panel/panel.js`, `src/panel/panel.css`
-- Summary: Scoped size scaling to item list typography by introducing `--items-font-size`, removed scale coupling from global panel text, and converted item/list text styles to `em` so item titles/meta/prices/actions scale consistently with size controls.
-- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
-<!-- fingerprint:3a19f53f37ef -->
-
 ## Last Updated
-- 2026-04-09T13:01:28+03:30
+- 2026-04-10T22:07:36+03:30

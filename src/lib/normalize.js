@@ -180,13 +180,54 @@
   }
 
   function parsePriceValue(value) {
-    const digits = normalizeDigits(value).replace(/[^\d]/g, "");
-    if (!digits) {
+    const normalized = normalizeWhitespace(normalizeDigits(replacePersianVariants(value || "")));
+    if (!normalized) {
       return null;
     }
 
-    const parsed = Number.parseInt(digits, 10);
-    return Number.isFinite(parsed) ? parsed : null;
+    const decimalCurrencyMatch = normalized.match(
+      /(?:[$€£]|usd|eur|gbp)\s*([0-9][0-9,.\s٬٫]*)/i
+    );
+    if (decimalCurrencyMatch?.[1]) {
+      const decimalRaw = decimalCurrencyMatch[1]
+        .replace(/[٬\s]/g, "")
+        .replace(/,/g, "");
+      const decimalValue = Number(decimalRaw);
+      if (Number.isFinite(decimalValue) && decimalValue > 0) {
+        return Math.round(decimalValue);
+      }
+    }
+
+    const candidates = [];
+    const groupedNumberRegex = /[0-9]{1,3}(?:[٬٫,.\s][0-9]{3})+(?:[.,][0-9]{1,2})?/g;
+    let groupedMatch;
+    while ((groupedMatch = groupedNumberRegex.exec(normalized))) {
+      let token = groupedMatch[0]
+        .replace(/[٬\s]/g, "")
+        .trim();
+      token = token.replace(/([.,])[0-9]{1,2}$/g, "");
+      const digits = token.replace(/[^\d]/g, "");
+      const parsed = Number.parseInt(digits, 10);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        candidates.push(parsed);
+      }
+    }
+
+    if (!candidates.length) {
+      const plainNumberRegex = /[0-9]{2,}/g;
+      let plainMatch;
+      while ((plainMatch = plainNumberRegex.exec(normalized))) {
+        const parsed = Number.parseInt(plainMatch[0], 10);
+        if (Number.isFinite(parsed) && parsed > 0) {
+          candidates.push(parsed);
+        }
+      }
+    }
+
+    if (!candidates.length) {
+      return null;
+    }
+    return Math.max(...candidates);
   }
 
   function normalizePriceUnit(value, currencyHint) {
@@ -263,6 +304,26 @@
     return match ? match[1] : null;
   }
 
+  function extractTechnolifeProductIdFromUrl(url) {
+    const match = String(url || "").match(/\/product-(\d+)(?:\/|$)/i);
+    return match ? match[1] : null;
+  }
+
+  function extractEmallsProductIdFromUrl(url) {
+    const match = String(url || "").match(/~id~(\d+)(?:\/|$)?/i);
+    return match ? match[1] : null;
+  }
+
+  function extractAmazonAsinFromUrl(url) {
+    const match = String(url || "").match(/\/(?:dp|gp\/(?:aw\/d|product))\/([A-Z0-9]{10})(?:[/?]|$)/i);
+    return match ? match[1].toUpperCase() : null;
+  }
+
+  function extractEbayItemIdFromUrl(url) {
+    const match = String(url || "").match(/\/itm\/(\d+)(?:[/?]|$)/i);
+    return match ? match[1] : null;
+  }
+
   function buildSourceId(productUrl, site) {
     const canonicalUrl = canonicalizeUrl(productUrl);
     if (site === "digikala") {
@@ -273,6 +334,26 @@
     if (site === "torob") {
       const productKey = extractTorobProductKey(canonicalUrl);
       return productKey ? `torob:${productKey}` : `torob:${canonicalUrl}`;
+    }
+
+    if (site === "technolife") {
+      const productId = extractTechnolifeProductIdFromUrl(canonicalUrl);
+      return productId ? `technolife:${productId}` : `technolife:${canonicalUrl}`;
+    }
+
+    if (site === "emalls") {
+      const productId = extractEmallsProductIdFromUrl(canonicalUrl);
+      return productId ? `emalls:${productId}` : `emalls:${canonicalUrl}`;
+    }
+
+    if (site === "amazon") {
+      const asin = extractAmazonAsinFromUrl(canonicalUrl);
+      return asin ? `amazon:${asin}` : `amazon:${canonicalUrl}`;
+    }
+
+    if (site === "ebay") {
+      const itemId = extractEbayItemIdFromUrl(canonicalUrl);
+      return itemId ? `ebay:${itemId}` : `ebay:${canonicalUrl}`;
     }
 
     return canonicalUrl;
@@ -312,6 +393,29 @@
     return url.toString();
   }
 
+  function buildTechnolifeSearchUrl(query) {
+    const url = new URL("https://www.technolife.com/product/list/search");
+    url.searchParams.set("keywords", normalizeWhitespace(valueOrFallback(query)));
+    return url.toString();
+  }
+
+  function buildEmallsSearchUrl(query) {
+    const normalizedQuery = normalizeWhitespace(valueOrFallback(query));
+    return `https://emalls.ir/لیست-قیمت~skey~${encodeURIComponent(normalizedQuery)}`;
+  }
+
+  function buildAmazonSearchUrl(query) {
+    const url = new URL("https://www.amazon.com/s");
+    url.searchParams.set("k", normalizeWhitespace(valueOrFallback(query)));
+    return url.toString();
+  }
+
+  function buildEbaySearchUrl(query) {
+    const url = new URL("https://www.ebay.com/sch/i.html");
+    url.searchParams.set("_nkw", normalizeWhitespace(valueOrFallback(query)));
+    return url.toString();
+  }
+
   function buildGoogleSearchUrl(query) {
     const url = new URL("https://www.google.com/search");
     url.searchParams.set("q", normalizeWhitespace(valueOrFallback(query)));
@@ -324,6 +428,14 @@
         return "دیجیکالا";
       case "torob":
         return "ترب";
+      case "technolife":
+        return "تکنولایف";
+      case "emalls":
+        return "ایمالز";
+      case "amazon":
+        return "آمازون";
+      case "ebay":
+        return "ای‌بِی";
       default:
         return "نامشخص";
     }
@@ -350,11 +462,19 @@
     canonicalizeUrl,
     extractProductIdFromUrl,
     extractTorobProductKey,
+    extractTechnolifeProductIdFromUrl,
+    extractEmallsProductIdFromUrl,
+    extractAmazonAsinFromUrl,
+    extractEbayItemIdFromUrl,
     buildSourceId,
     inferBrand,
     buildSearchQuery,
     buildTorobSearchUrl,
     buildDigikalaSearchUrl,
+    buildTechnolifeSearchUrl,
+    buildEmallsSearchUrl,
+    buildAmazonSearchUrl,
+    buildEbaySearchUrl,
     buildGoogleSearchUrl,
     getSiteLabel
   };

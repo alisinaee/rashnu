@@ -1,14 +1,23 @@
 {
   "manifest_version": 3,
   "name": "Dirob",
-  "version": "0.0.2",
-  "description": "Compare Digikala listing prices with Torob while you browse.",
+  "version": "0.0.3",
+  "description": "Compare listings across Digikala, Torob, Technolife, Emalls, Amazon, and eBay.",
   "permissions": ["activeTab", "storage", "scripting", "tabs", "sidePanel", "downloads", "webNavigation"],
   "host_permissions": [
     "https://www.digikala.com/*",
     "https://api.digikala.com/*",
     "https://torob.com/*",
     "https://api.torob.com/*",
+    "https://www.technolife.com/*",
+    "https://emalls.ir/*",
+    "https://api.ebay.com/*",
+    "https://www.ebay.com/*",
+    "https://creatorsapi.amazon/*",
+    "https://creatorsapi.auth.us-west-2.amazoncognito.com/*",
+    "https://www.amazon.com/*",
+    "https://r.jina.ai/*",
+    "https://translate.googleapis.com/*",
     "http://127.0.0.1:45173/*",
     "http://localhost:45173/*"
   ],
@@ -23,7 +32,14 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.digikala.com/*", "https://torob.com/*"],
+      "matches": [
+        "https://www.digikala.com/*",
+        "https://torob.com/*",
+        "https://www.technolife.com/*",
+        "https://emalls.ir/*",
+        "https://www.amazon.com/*",
+        "https://www.ebay.com/*"
+      ],
       "js": [
         "src/lib/logger.js",
         "src/lib/normalize.js",

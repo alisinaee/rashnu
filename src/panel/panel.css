@@ -80,12 +80,31 @@ body {
   height: 100vh;
 }
 
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 :root[data-theme="light"] body {
   background: linear-gradient(180deg, #edf2f8 0%, #e3eaf4 100%);
 }
 
 html[lang="fa"] body {
   font-family: "Vazir", "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
+}
+
+html[lang="fa"] .settings-panel,
+html[lang="fa"] .settings-panel * {
+  font-family: "Vazir", "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
+}
+
+html[lang="en"] .settings-panel,
+html[lang="en"] .summary-card,
+html[lang="en"] .item-card {
+  font-family: "SF Pro Display", "Segoe UI", Tahoma, sans-serif;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .panel-shell {
@@ -304,6 +323,69 @@ html[dir="ltr"] .brand-block > div {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 0;
+}
+
+.provider-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.settings-provider-warning {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 171, 114, 0.38);
+  border-radius: 10px;
+  background: rgba(255, 171, 114, 0.1);
+  color: #ffd6b5;
+  font-size: 0.72rem;
+}
+
+:root[data-theme="light"] .settings-provider-warning {
+  border-color: rgba(194, 96, 27, 0.32);
+  background: #fff0e3;
+  color: #9f4f18;
+}
+
+.provider-card {
+  display: flex;
+  min-height: 66px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-soft);
+  min-width: 0;
+}
+
+.provider-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.switch-row--provider {
+  min-height: 34px;
+  padding: 0 8px;
+}
+
+.switch-row--provider .switch-label {
+  font-size: 0.74rem;
+}
+
+.switch-row--provider .switch-control {
+  width: 34px;
+  height: 20px;
+}
+
+.switch-row--provider .switch-thumb {
+  width: 14px;
+  height: 14px;
+}
+
+.switch-row--provider.is-active .switch-thumb {
+  transform: translateX(14px);
 }
 
 .switch-row {
@@ -724,6 +806,13 @@ html[dir="ltr"] .brand-block > div {
   gap: 6px;
 }
 
+.list.is-minimal .provider-confidence {
+  min-width: 28px;
+  height: 20px;
+  font-size: 0.64em;
+  padding: 0 6px;
+}
+
 .list.is-minimal .price-site-badge {
   min-width: 14px;
   min-height: 14px;
@@ -825,7 +914,8 @@ html[dir="ltr"] .brand-block > div {
 @media (max-width: 430px) {
   .settings-grid,
   .switch-grid,
-  .settings-grid--paired {
+  .settings-grid--paired,
+  .provider-sections {
     grid-template-columns: 1fr;
   }
 
@@ -1182,7 +1272,7 @@ html[dir="ltr"] .brand-block > div {
 
 .price-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
   min-width: 0;
 }
@@ -1194,12 +1284,92 @@ html[dir="ltr"] .brand-block > div {
   min-width: 0;
 }
 
+.price-box--link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.price-box--link:hover {
+  background: color-mix(in srgb, var(--panel-alt) 84%, var(--brand) 16%);
+}
+
 .price-main {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   min-width: 0;
+}
+
+.price-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.provider-confidence {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 0.7em;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.provider-confidence.confidence-low {
+  background: rgba(208, 72, 72, 0.14);
+  border-color: rgba(208, 72, 72, 0.34);
+  color: #ffb3b3;
+}
+
+.provider-confidence.confidence-average {
+  background: rgba(244, 193, 82, 0.14);
+  border-color: rgba(244, 193, 82, 0.34);
+  color: #ffd98c;
+}
+
+.provider-confidence.confidence-good {
+  background: rgba(29, 138, 82, 0.16);
+  border-color: rgba(29, 138, 82, 0.38);
+  color: #9de4c0;
+}
+
+.provider-confidence.confidence-unknown {
+  background: rgba(111, 183, 255, 0.12);
+  border-color: rgba(111, 183, 255, 0.3);
+  color: #a9d8ff;
+}
+
+:root[data-theme="light"] .provider-confidence.confidence-low {
+  background: rgba(208, 72, 72, 0.12);
+  border-color: rgba(208, 72, 72, 0.28);
+  color: #b93939;
+}
+
+:root[data-theme="light"] .provider-confidence.confidence-average {
+  background: rgba(184, 136, 16, 0.12);
+  border-color: rgba(184, 136, 16, 0.28);
+  color: #9b6f0d;
+}
+
+:root[data-theme="light"] .provider-confidence.confidence-good {
+  background: rgba(29, 138, 82, 0.11);
+  border-color: rgba(29, 138, 82, 0.28);
+  color: #1d8a52;
+}
+
+:root[data-theme="light"] .provider-confidence.confidence-unknown {
+  background: rgba(94, 191, 255, 0.14);
+  border-color: rgba(61, 133, 183, 0.3);
+  color: #2f6d97;
 }
 
 .price-site-badge {
@@ -1261,8 +1431,9 @@ html[dir="ltr"] .brand-block > div {
 
 .price-extra {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
   margin-top: 6px;
 }
 
@@ -1280,10 +1451,12 @@ html[dir="ltr"] .brand-block > div {
 }
 
 .price-extra-text {
-  display: block;
+  display: inline-flex;
+  align-items: center;
   color: var(--muted);
   font-size: 0.79em;
   line-height: 1.45;
+  white-space: nowrap;
 }
 
 .item-actions {
@@ -1305,6 +1478,30 @@ html[dir="ltr"] .brand-block > div {
   min-width: 0;
   max-width: 100%;
   white-space: nowrap;
+}
+
+.action-button--with-icon {
+  gap: 7px;
+}
+
+.action-button--with-icon .action-label {
+  min-width: 0;
+}
+
+.action-button--with-icon .action-site-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+}
+
+.action-button--with-icon .action-google-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.action-button--with-icon .action-symbol--search {
+  width: 14px;
+  height: 14px;
 }
 
 .action-button--icon {
@@ -1371,8 +1568,8 @@ html[dir="ltr"] .brand-block > div {
 }
 
 .action-symbol--reload {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .action-icon--google {
@@ -1388,7 +1585,7 @@ html[dir="ltr"] .brand-block > div {
 }
 
 .action-button--icon[data-role="reload-button-inline"] {
-  font-size: 1.18em;
+  font-size: 1em;
 }
 
 :root[data-theme="light"] .status-chip.loading {
@@ -1508,6 +1705,7 @@ html[dir="ltr"] .brand-block > div {
   .settings-grid,
   .switch-grid,
   .settings-grid--paired,
+  .provider-sections,
   .price-grid {
     grid-template-columns: 1fr;
   }

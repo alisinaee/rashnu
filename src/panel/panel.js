@@ -42,11 +42,20 @@
     autoLogs: document.querySelector('[data-switch-label="auto-logs"]'),
     guideNumbers: document.querySelector('[data-switch-label="guide-numbers"]')
   };
+  const providerSectionLabels = {
+    search: document.querySelector('[data-provider-section-label="search"]'),
+    price: document.querySelector('[data-provider-section-label="price"]')
+  };
+  const providerWarningText = document.querySelector("[data-provider-warning]");
+  const providerLabels = Array.from(document.querySelectorAll("[data-provider-label]"));
+  const providerSearchButtons = Array.from(document.querySelectorAll('[data-action="toggle-provider-search"]'));
+  const providerPriceButtons = Array.from(document.querySelectorAll('[data-action="toggle-provider-price"]'));
 
   const TRANSLATIONS = {
     fa: {
       pageWaiting: "منتظر یک صفحه پشتیبانی‌شده...",
-      unsupportedPage: "این تب در حال حاضر صفحه‌ی فهرست یا جزئیات محصول در دیجیکالا یا ترب نیست.",
+      unsupportedPage:
+        "این تب در حال حاضر صفحه‌ی فهرست یا جزئیات محصول در دیجیکالا، ترب، تکنولایف، ایمالز، آمازون یا eBay نیست.",
       modeTitle: "{source} → {target}",
       settingsDefault: "حالت عادی: محصولات قابل مشاهده روی صفحه بررسی می‌شوند.",
       settingsSelection:
@@ -76,12 +85,16 @@
       minimalView: "نمای مینیمال",
       guideNumbers: "شماره راهنما",
       autoLogs: "ثبت خودکار لاگ",
+      providerSearchSection: "دکمه‌های جست‌وجو",
+      providerPriceSection: "نمایش قیمت",
+      providerWarning:
+        "هشدار: آمازون و eBay ممکن است ترافیک افزونه را به‌عنوان رفتار بات تشخیص دهند، بنابراین نتایج این دو منبع همیشه کاملاً قابل اتکا نیست.",
       layout: "چیدمان",
       layoutList: "لیست",
       layoutGrid: "گرید",
       fontSize: "اندازه",
       unsupportedEmpty:
-        "برای استفاده از Dirob یک صفحه‌ی فهرست یا جزئیات محصول در دیجیکالا یا ترب باز کنید.",
+        "برای استفاده از Dirob یک صفحه‌ی فهرست یا جزئیات محصول در دیجیکالا، ترب، تکنولایف، ایمالز، آمازون یا eBay باز کنید.",
       selectionEmpty: "ماوس را روی یک کارت محصول ببرید یا روی آن فوکوس کنید.",
       noItems: "هنوز نتیجه‌ای برای نمایش وجود ندارد.",
       summarySelection:
@@ -108,6 +121,7 @@
       status_low_confidence: "نیاز به بررسی",
       status_not_found: "پیدا نشد",
       status_error: "خطا",
+      hiddenPrice: "نمایش داده نمی‌شود",
       unknown: "نامشخص",
       noExact: "بدون تطابق قطعی",
       detailHint: "این صفحه جزئیات محصول است و همان محصول اصلی بررسی می‌شود.",
@@ -157,7 +171,8 @@
     },
     en: {
       pageWaiting: "Waiting for a supported page...",
-      unsupportedPage: "This tab is not a Digikala or Torob product listing/detail page.",
+      unsupportedPage:
+        "This tab is not a Digikala, Torob, Technolife, Emalls, Amazon, or eBay product listing/detail page.",
       modeTitle: "{source} → {target}",
       settingsDefault: "Normal mode: visible products on the page are tracked.",
       settingsSelection:
@@ -187,11 +202,16 @@
       minimalView: "Minimal View",
       guideNumbers: "Guide Numbers",
       autoLogs: "Auto Logs",
+      providerSearchSection: "Search Buttons",
+      providerPriceSection: "Show Prices",
+      providerWarning:
+        "Warning: Amazon and eBay may detect extension traffic as bot activity, so results on these providers are not always fully reliable.",
       layout: "Layout",
       layoutList: "List",
       layoutGrid: "Grid",
       fontSize: "Size",
-      unsupportedEmpty: "Open a Digikala or Torob listing/detail page to use Dirob.",
+      unsupportedEmpty:
+        "Open a Digikala, Torob, Technolife, Emalls, Amazon, or eBay listing/detail page to use Dirob.",
       selectionEmpty: "Hover or focus a product card to inspect just that item.",
       noItems: "No results are ready yet.",
       summarySelection:
@@ -218,6 +238,7 @@
       status_low_confidence: "Review",
       status_not_found: "Not found",
       status_error: "Error",
+      hiddenPrice: "Hidden",
       unknown: "Unknown",
       noExact: "No exact match",
       detailHint: "This is a product detail page. Dirob is checking the main product.",
@@ -454,6 +475,30 @@
       await refreshState();
     });
 
+    for (const button of providerSearchButtons) {
+      button.addEventListener("click", async () => {
+        const provider = String(button.getAttribute("data-provider") || "");
+        const enabled = !isProviderSearchEnabled(currentState, provider);
+        await chrome.runtime.sendMessage({
+          type: "DIROB_SET_PROVIDER_SEARCH",
+          payload: { provider, enabled }
+        });
+        await refreshState();
+      });
+    }
+
+    for (const button of providerPriceButtons) {
+      button.addEventListener("click", async () => {
+        const provider = String(button.getAttribute("data-provider") || "");
+        const enabled = !isProviderPriceVisible(currentState, provider);
+        await chrome.runtime.sendMessage({
+          type: "DIROB_SET_PROVIDER_PRICE",
+          payload: { provider, enabled }
+        });
+        await refreshState();
+      });
+    }
+
     layoutListButton.addEventListener("click", async () => {
       await chrome.runtime.sendMessage({
         type: "DIROB_SET_LAYOUT_MODE",
@@ -579,10 +624,8 @@
     const language = state?.language === "en" ? "en" : "fa";
     const translation = TRANSLATIONS[language];
     const siteLabel = siteLabelFor(page.site, language);
-    const targetLabel =
-      page.site === "torob"
-        ? siteLabelFor("digikala", language)
-        : siteLabelFor("torob", language);
+    const targetSite = inferTargetSiteForPage(page, state);
+    const targetLabel = siteLabelFor(targetSite, language);
 
     document.documentElement.lang = language;
     document.documentElement.dir = language === "fa" ? "rtl" : "ltr";
@@ -616,6 +659,19 @@
     switchLabels.debug.textContent = translation.debug;
     switchLabels.autoLogs.textContent = translation.autoLogs;
     switchLabels.guideNumbers.textContent = translation.guideNumbers;
+    if (providerSectionLabels.search) {
+      providerSectionLabels.search.textContent = translation.providerSearchSection;
+    }
+    if (providerSectionLabels.price) {
+      providerSectionLabels.price.textContent = translation.providerPriceSection;
+    }
+    if (providerWarningText) {
+      providerWarningText.textContent = translation.providerWarning;
+    }
+    for (const labelNode of providerLabels) {
+      const provider = String(labelNode.getAttribute("data-provider-label") || "");
+      labelNode.textContent = siteLabelFor(provider, language);
+    }
     layoutLabel.textContent = translation.layout;
     fontLabel.textContent = translation.fontSize;
     layoutListButton.textContent = translation.layoutList;
@@ -655,6 +711,18 @@
     autoLogsButton.setAttribute("aria-disabled", String(!Boolean(state?.debugEnabled)));
     guideNumbersButton.classList.toggle("is-active", Boolean(state?.guideNumbersEnabled));
     guideNumbersButton.setAttribute("aria-pressed", String(Boolean(state?.guideNumbersEnabled)));
+    for (const button of providerSearchButtons) {
+      const provider = String(button.getAttribute("data-provider") || "");
+      const enabled = isProviderSearchEnabled(state, provider);
+      button.classList.toggle("is-active", enabled);
+      button.setAttribute("aria-pressed", String(enabled));
+    }
+    for (const button of providerPriceButtons) {
+      const provider = String(button.getAttribute("data-provider") || "");
+      const enabled = isProviderPriceVisible(state, provider);
+      button.classList.toggle("is-active", enabled);
+      button.setAttribute("aria-pressed", String(enabled));
+    }
     layoutListButton.classList.toggle("is-active", state?.layoutMode !== "grid");
     layoutGridButton.classList.toggle("is-active", state?.layoutMode === "grid");
     settingsPanel.classList.toggle("is-open", Boolean(state?.settingsOpen));
@@ -804,32 +872,23 @@
     const translation = TRANSLATIONS[language];
     const item = entry.item;
     const match = entry.match;
-    const sourceLabel = siteLabelFor(item.sourceSite, language);
-    const sourceIconUrl = siteIconFor(item.sourceSite);
-    const targetSite = match?.targetSite || (item.sourceSite === "torob" ? "digikala" : "torob");
-    const targetLabel = siteLabelFor(targetSite, language);
-    const targetIconUrl = siteIconFor(targetSite);
-    const status = entry?.isLoading ? "loading" : match?.status || "loading";
-    const confidence =
-      typeof match?.confidence === "number"
-        ? `${Math.round(match.confidence * 100)}%`
-        : translation.unknown;
-    const confidenceToneClass = classifyConfidenceTone(match?.confidence);
-    const targetPrice =
-      match?.targetPriceText || (status === "loading" ? translation.status_loading : translation.unknown);
-    const targetTitle = match?.matchedTitle || translation.noExact;
+    const matchBySite = {
+      ...(match?.allResults && typeof match.allResults === "object" ? match.allResults : {})
+    };
+    if (match?.targetSite && !matchBySite[match.targetSite]) {
+      matchBySite[match.targetSite] = match;
+    }
+    const allTargetSites = getProviderOrderForSource(item?.sourceSite);
+    const targetSites = allTargetSites.filter((site) => isProviderSearchEnabled(state, site));
+    const providerSites = [item.sourceSite, ...allTargetSites].filter(Boolean);
+    const sourcePriceVisible = isProviderPriceVisible(state, item.sourceSite);
+    const visibleProviderSites = providerSites.filter((site) => isProviderPriceVisible(state, site));
     const guideNumber = Number.isFinite(item.guideNumber)
       ? item.guideNumber
       : Number.isFinite(item.position)
         ? item.position + 1
         : null;
     const googleUrl = match?.googleUrl || globalThis.DirobNormalize.buildGoogleSearchUrl(item.title);
-    const targetSearchUrl =
-      match?.searchUrl ||
-      (targetSite === "torob"
-        ? globalThis.DirobNormalize.buildTorobSearchUrl(item.title)
-        : globalThis.DirobNormalize.buildDigikalaSearchUrl(item.title));
-    const targetUrl = match?.targetUrl || targetSearchUrl;
     const minimalViewEnabled = Boolean(state?.minimalViewEnabled);
     const isGridLayout = state?.layoutMode === "grid";
     const useCompactActions = minimalViewEnabled || isGridLayout;
@@ -837,20 +896,60 @@
     const imageMarkup = item.imageUrl
       ? `<img src="${escapeHtml(item.imageUrl)}" alt="" data-thumb loading="lazy" referrerpolicy="no-referrer">`
       : "";
-    const sourceExtraMarkup = buildPriceExtraMarkup(
-      item.displayDiscountPercent,
-      item.displayOriginalPriceText,
-      language
-    );
-    const targetExtraMarkup = buildPriceExtraMarkup(
-      match?.targetDiscountPercent,
-      match?.targetOriginalPriceText,
-      language
-    );
-    const statusTooltip = `${t(language, `status_${status}`)} · ${
-      translation[`statusHint_${status}`] || translation.statusHint_default
-    }`;
-    const confidenceTooltip = `${t(language, "confidence", { value: confidence })}`;
+    const sourceExtraMarkup = sourcePriceVisible
+      ? buildPriceExtraMarkup(item.displayDiscountPercent, item.displayOriginalPriceText, language)
+      : "";
+    const providerPriceBoxesMarkup = visibleProviderSites
+      .map((site) => {
+        const isSource = site === item.sourceSite;
+        const siteLabel = siteLabelFor(site, language);
+        const siteIcon = siteIconFor(site);
+        const siteMatch = isSource ? null : matchBySite[site];
+        const siteSearchEnabled = targetSites.includes(site);
+        const siteStatus = isSource
+          ? null
+          : siteMatch?.status || (siteSearchEnabled && entry?.isLoading ? "loading" : "not_found");
+        const rawPriceText = isSource
+          ? (item.displayPriceText || translation.unknown)
+          : (siteMatch?.targetPriceText ||
+              (siteSearchEnabled && siteStatus === "loading"
+                ? translation.status_loading
+                : translation.unknown));
+        const priceText = localizeDynamicText(rawPriceText, language);
+        const extraMarkup = isSource
+          ? sourceExtraMarkup
+          : buildPriceExtraMarkup(siteMatch?.targetDiscountPercent, siteMatch?.targetOriginalPriceText, language);
+        const providerProductUrl = isSource
+          ? item.productUrl || null
+          : siteMatch?.targetUrl && siteMatch?.targetUrl !== siteMatch?.searchUrl
+            ? siteMatch.targetUrl
+            : null;
+        const confidenceMarkup =
+          !isSource && Number.isFinite(siteMatch?.confidence)
+            ? `<span class="provider-confidence ${escapeHtml(classifyConfidenceTone(siteMatch?.confidence))}">${escapeHtml(
+                formatConfidencePercent(siteMatch?.confidence)
+              )}</span>`
+            : "";
+        const boxTag = providerProductUrl ? "a" : "div";
+        const boxLinkAttributes = providerProductUrl
+          ? ` href="${escapeHtml(providerProductUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(
+              t(language, "openTargetHint", { site: siteLabel })
+            )}" aria-label="${escapeHtml(t(language, "openTargetHint", { site: siteLabel }))}"`
+          : "";
+        return `
+          <${boxTag} class="price-box ${providerProductUrl ? "price-box--link" : ""}" data-provider-site="${escapeHtml(site)}"${boxLinkAttributes}>
+            <div class="price-main">
+              <span class="price-value">${escapeHtml(priceText)}</span>
+              <div class="price-meta">
+                ${confidenceMarkup}
+                ${buildPriceSiteBadgeMarkup(language, siteLabel, siteIcon)}
+              </div>
+            </div>
+            <div>${extraMarkup}</div>
+          </${boxTag}>
+        `;
+      })
+      .join("");
     const guideTooltip =
       guideNumber != null
         ? t(language, "guideNumberHint", {
@@ -858,21 +957,38 @@
           })
         : "";
 
+    const targetActionMarkupCompact = targetSites
+      .map((site) => {
+        const siteLabel = siteLabelFor(site, language);
+        const siteIcon = siteIconFor(site);
+        const siteMatch = matchBySite[site];
+        const siteSearchUrl = siteMatch?.searchUrl || buildTargetSearchUrl(site, item.title);
+        return `
+          <a class="action-button action-button--icon" data-role="search-target" href="${escapeHtml(siteSearchUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t(language, "searchTargetHint", { site: siteLabel }))}" aria-label="${escapeHtml(t(language, "searchTargetHint", { site: siteLabel }))}">
+            <span class="action-icon action-icon--search" aria-hidden="true">${buildSearchIconMarkup()}${buildActionSiteIconMarkup(siteLabel, siteIcon)}</span>
+          </a>
+        `;
+      })
+      .join("");
+    const targetActionMarkupRegular = targetSites
+      .map((site) => {
+        const siteLabel = siteLabelFor(site, language);
+        const siteIcon = siteIconFor(site);
+        const siteMatch = matchBySite[site];
+        const siteSearchUrl = siteMatch?.searchUrl || buildTargetSearchUrl(site, item.title);
+        return `
+          <a class="action-button action-button--with-icon" data-role="search-target" href="${escapeHtml(siteSearchUrl)}" target="_blank" rel="noreferrer">
+            <span class="action-icon action-icon--search" aria-hidden="true">${buildSearchIconMarkup()}${buildActionSiteIconMarkup(siteLabel, siteIcon)}</span>
+            <span class="action-label">${escapeHtml(t(language, "searchTarget", { site: siteLabel }))}</span>
+          </a>
+        `;
+      })
+      .join("");
+
     const actionMarkup = useCompactActions
       ? `
         <div class="item-actions item-actions--minimal">
-          <a class="action-button action-button--icon" data-role="open-target" href="${escapeHtml(targetUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t(language, "openTargetHint", { site: targetLabel }))}" aria-label="${escapeHtml(t(language, "openTargetHint", { site: targetLabel }))}">
-            <span class="action-icon action-icon--site" aria-hidden="true">${buildActionSiteIconMarkup(
-              targetLabel,
-              targetIconUrl
-            )}</span>
-          </a>
-          <a class="action-button action-button--icon" data-role="search-target" href="${escapeHtml(targetSearchUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(t(language, "searchTargetHint", { site: targetLabel }))}" aria-label="${escapeHtml(t(language, "searchTargetHint", { site: targetLabel }))}">
-            <span class="action-icon action-icon--search" aria-hidden="true">${buildSearchIconMarkup()}${buildActionSiteIconMarkup(
-              targetLabel,
-              targetIconUrl
-            )}</span>
-          </a>
+          ${targetActionMarkupCompact}
           <a class="action-button action-button--icon" data-role="google-link" href="${escapeHtml(googleUrl)}" target="_blank" rel="noreferrer" title="${escapeHtml(translation.googleHint)}" aria-label="${escapeHtml(translation.googleHint)}">
             <span class="action-icon action-icon--google" aria-hidden="true">${buildGoogleIconMarkup()}</span>
           </a>
@@ -885,10 +1001,14 @@
         </div>`
       : `
         <div class="item-actions">
-          <a class="action-button" data-role="open-target" href="${escapeHtml(targetUrl)}" target="_blank" rel="noreferrer">${escapeHtml(t(language, "openTarget", { site: targetLabel }))}</a>
-          <a class="action-button" data-role="search-target" href="${escapeHtml(targetSearchUrl)}" target="_blank" rel="noreferrer">${escapeHtml(t(language, "searchTarget", { site: targetLabel }))}</a>
-          <a class="action-button" data-role="google-link" href="${escapeHtml(googleUrl)}" target="_blank" rel="noreferrer">${escapeHtml(t(language, "google"))}</a>
+          ${targetActionMarkupRegular}
+          <a class="action-button action-button--with-icon" data-role="google-link" href="${escapeHtml(googleUrl)}" target="_blank" rel="noreferrer">
+            <span class="action-icon action-icon--google" aria-hidden="true">${buildGoogleIconMarkup()}</span>
+            <span class="action-label">${escapeHtml(t(language, "google"))}</span>
+          </a>
         </div>`;
+
+    const itemTitle = localizeDynamicText(item.title, language);
 
     return `
       <article class="item-card ${entry.isVisible ? "is-visible" : ""}" data-source-id="${escapeHtml(item.sourceId)}" data-item-fingerprint="${escapeHtml(fingerprint)}" data-guide-number="${guideNumber != null ? escapeHtml(String(guideNumber)) : ""}">
@@ -907,8 +1027,6 @@
           <div class="item-body">
             <div class="meta-row">
               ${guideNumber != null ? `<span class="guide-chip" data-role="guide-number" title="${escapeHtml(guideTooltip)}" aria-label="${escapeHtml(guideTooltip)}">#${escapeHtml(String(guideNumber))}</span>` : `<span class="guide-chip is-empty" data-role="guide-number"></span>`}
-              <span class="status-chip ${escapeHtml(status)}" data-role="status-chip" title="${escapeHtml(statusTooltip)}" aria-label="${escapeHtml(statusTooltip)}">${escapeHtml(t(language, `status_${status}`))}</span>
-              <span class="confidence-chip ${escapeHtml(confidenceToneClass)}" data-role="confidence-chip" title="${escapeHtml(confidenceTooltip)}" aria-label="${escapeHtml(confidenceTooltip)}">${escapeHtml(t(language, "confidenceChip", { value: confidence }))}</span>
               ${
                 entry?.retryCountMatch
                   ? `<span class="retry-chip" data-role="retry-chip">${escapeHtml(
@@ -917,26 +1035,17 @@
                   : ""
               }
             </div>
-            <h2 class="item-title" data-role="item-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h2>
+            <h2 class="item-title" data-role="item-title" title="${escapeHtml(itemTitle)}">${escapeHtml(itemTitle)}</h2>
           </div>
         </div>
 
-        <div class="price-grid">
-          <div class="price-box">
-            <div class="price-main">
-              <span class="price-value" data-role="source-price">${escapeHtml(item.displayPriceText || translation.unknown)}</span>
-              ${buildPriceSiteBadgeMarkup(language, sourceLabel, sourceIconUrl)}
-            </div>
-            <div data-role="source-extra">${sourceExtraMarkup}</div>
-          </div>
-          <div class="price-box">
-            <div class="price-main">
-              <span class="price-value" data-role="target-price">${escapeHtml(targetPrice)}</span>
-              ${buildPriceSiteBadgeMarkup(language, targetLabel, targetIconUrl)}
-            </div>
-            <div data-role="target-extra">${targetExtraMarkup}</div>
-          </div>
-        </div>
+        ${
+          providerPriceBoxesMarkup
+            ? `<div class="price-grid">
+          ${providerPriceBoxesMarkup}
+        </div>`
+            : ""
+        }
 
         ${actionMarkup}
       </article>
@@ -1189,23 +1298,41 @@
       sellerCount: entry?.match?.sellerCount || 0,
       targetUrl: entry?.match?.targetUrl || "",
       searchUrl: entry?.match?.searchUrl || "",
-      googleUrl: entry?.match?.googleUrl || ""
+      googleUrl: entry?.match?.googleUrl || "",
+      allResults: Object.fromEntries(
+        Object.entries(entry?.match?.allResults || {}).map(([site, result]) => [
+          site,
+          {
+            status: result?.status || "",
+            confidence: Number.isFinite(result?.confidence) ? Number(result.confidence) : null,
+            targetPriceText: result?.targetPriceText || "",
+            targetOriginalPriceText: result?.targetOriginalPriceText || "",
+            targetDiscountPercent: result?.targetDiscountPercent || "",
+            targetUrl: result?.targetUrl || "",
+            searchUrl: result?.searchUrl || ""
+          }
+        ])
+      ),
+      providerSearchEnabled: state?.providerSearchEnabled || {},
+      providerPriceVisible: state?.providerPriceVisible || {}
     });
   }
 
   function buildPriceExtraMarkup(discountPercent, originalPriceText, language) {
+    const localizedDiscount = localizeDynamicText(discountPercent, language);
+    const localizedOriginalPrice = localizeDynamicText(originalPriceText, language);
     const parts = [];
-    if (discountPercent) {
+    if (localizedDiscount) {
       parts.push(
         `<span class="price-extra-chip">${escapeHtml(t(language, "discount"))}: ${escapeHtml(
-          discountPercent
+          localizedDiscount
         )}</span>`
       );
     }
-    if (originalPriceText) {
+    if (localizedOriginalPrice) {
       parts.push(
         `<span class="price-extra-text">${escapeHtml(t(language, "originalPrice"))}: ${escapeHtml(
-          originalPriceText
+          localizedOriginalPrice
         )}</span>`
       );
     }
@@ -1248,7 +1375,7 @@
   }
 
   function buildReloadIconMarkup() {
-    return `<svg class="action-symbol action-symbol--reload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>`;
+    return `<svg class="action-symbol action-symbol--reload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>`;
   }
 
   function classifyConfidenceTone(confidenceValue) {
@@ -1262,6 +1389,48 @@
       return "confidence-average";
     }
     return "confidence-good";
+  }
+
+  function formatConfidencePercent(confidenceValue) {
+    if (!Number.isFinite(confidenceValue)) {
+      return "";
+    }
+    return `${Math.max(0, Math.min(100, Math.round(confidenceValue * 100)))}%`;
+  }
+
+  function localizeDynamicText(value, language) {
+    const text = String(value || "");
+    if (!text) {
+      return "";
+    }
+    if (language !== "en") {
+      return text;
+    }
+    return toLatinDigits(text)
+      .replace(/نامشخص/gu, "Unknown")
+      .replace(/ناموجود/gu, "Unavailable")
+      .replace(/اتمام موجودی/gu, "Out of stock")
+      .replace(/موجود نیست/gu, "Out of stock")
+      .replace(/تومان/gu, "T")
+      .replace(/ریال/gu, "IRR");
+  }
+
+  function toLatinDigits(value) {
+    return String(value || "")
+      .replace(/[۰-۹]/gu, (digit) => String(digit.charCodeAt(0) - 1776))
+      .replace(/[٠-٩]/gu, (digit) => String(digit.charCodeAt(0) - 1632))
+      .replace(/٬/gu, ",")
+      .replace(/٫/gu, ".");
+  }
+
+  function isProviderSearchEnabled(state, site) {
+    const map = state?.providerSearchEnabled || {};
+    return map[site] !== false;
+  }
+
+  function isProviderPriceVisible(state, site) {
+    const map = state?.providerPriceVisible || {};
+    return map[site] !== false;
   }
 
   function bindImageStates() {
@@ -1305,6 +1474,18 @@
     if (site === "torob") {
       return isEnglish ? "Torob" : "ترب";
     }
+    if (site === "technolife") {
+      return isEnglish ? "Technolife" : "تکنولایف";
+    }
+    if (site === "emalls") {
+      return isEnglish ? "Emalls" : "ایمالز";
+    }
+    if (site === "amazon") {
+      return isEnglish ? "Amazon" : "آمازون";
+    }
+    if (site === "ebay") {
+      return isEnglish ? "eBay" : "ای‌بِی";
+    }
     return isEnglish ? "Unknown" : "نامشخص";
   }
 
@@ -1315,7 +1496,90 @@
     if (site === "torob") {
       return extensionAssetUrl("assets/site-icons/torob-192.png");
     }
+    if (site === "technolife") {
+      return extensionAssetUrl("assets/site-icons/technolife-192.png");
+    }
+    if (site === "emalls") {
+      return extensionAssetUrl("assets/site-icons/emalls.svg");
+    }
+    if (site === "amazon") {
+      return extensionAssetUrl("assets/site-icons/amazon.svg");
+    }
+    if (site === "ebay") {
+      return extensionAssetUrl("assets/site-icons/ebay.svg");
+    }
     return "";
+  }
+
+  function inferTargetSiteForPage(page, state) {
+    const items = Array.isArray(page?.items) ? page.items : [];
+    const counts = new Map();
+    for (const entry of items) {
+      const site = entry?.match?.targetSite;
+      if (!site || !isProviderSearchEnabled(state, site)) {
+        continue;
+      }
+      counts.set(site, (counts.get(site) || 0) + 1);
+    }
+    if (counts.size) {
+      let selectedSite = "torob";
+      let selectedCount = -1;
+      for (const [site, count] of counts.entries()) {
+        if (count > selectedCount) {
+          selectedSite = site;
+          selectedCount = count;
+        }
+      }
+      return selectedSite;
+    }
+
+    const fallbackOrder = getProviderOrderForSource(page?.site);
+    for (const site of fallbackOrder) {
+      if (isProviderSearchEnabled(state, site)) {
+        return site;
+      }
+    }
+    return fallbackOrder[0] || "torob";
+  }
+
+  function inferTargetSiteForItem(item, state, match) {
+    if (match?.targetSite) {
+      return match.targetSite;
+    }
+    const order = getProviderOrderForSource(item?.sourceSite);
+    for (const site of order) {
+      if (isProviderSearchEnabled(state, site)) {
+        return site;
+      }
+    }
+    return order[0] || "torob";
+  }
+
+  function getProviderOrderForSource(sourceSite) {
+    const allProviders = ["torob", "digikala", "technolife", "emalls", "amazon", "ebay"];
+    if (!allProviders.includes(sourceSite)) {
+      return allProviders;
+    }
+    return allProviders.filter((site) => site !== sourceSite);
+  }
+
+  function buildTargetSearchUrl(site, query) {
+    if (site === "digikala") {
+      return globalThis.DirobNormalize.buildDigikalaSearchUrl(query);
+    }
+    if (site === "technolife") {
+      return globalThis.DirobNormalize.buildTechnolifeSearchUrl(query);
+    }
+    if (site === "emalls") {
+      return globalThis.DirobNormalize.buildEmallsSearchUrl(query);
+    }
+    if (site === "amazon") {
+      return globalThis.DirobNormalize.buildAmazonSearchUrl(query);
+    }
+    if (site === "ebay") {
+      return globalThis.DirobNormalize.buildEbaySearchUrl(query);
+    }
+    return globalThis.DirobNormalize.buildTorobSearchUrl(query);
   }
 
   function extensionAssetUrl(path) {

@@ -23,7 +23,11 @@
   const LINK_SELECTORS = {
     digikala:
       'a[href*="/product/dkp-"], a[href*="/product/"][href*="digikala.com"], a[href^="/product/dkp-"], a[href^="/product/"]',
-    torob: 'a[href*="/p/"], a[href^="/p/"]'
+    torob: 'a[href*="/p/"], a[href^="/p/"]',
+    technolife: 'a[href*="/product-"], a[href^="/product-"]',
+    emalls: 'a.prd-name[href], #listdiv a[href*="~id~"]',
+    amazon: 'h2 a[href*="/dp/"], h2 a[href*="/gp/product/"], h2 a[href*="/gp/aw/d/"]',
+    ebay: 'li.s-item a.s-item__link[href*="/itm/"], a[href*="/itm/"]'
   };
   const BAD_TITLE_PATTERNS = [
     /^تصویر\s+/u,
@@ -70,6 +74,51 @@
     '[data-testid="product-price"]',
     'a[href*="product-page/redirect"]'
   ];
+  const TECHNOLIFE_CURRENT_PRICE_SELECTORS = [
+    "p",
+    "span",
+    "div"
+  ];
+  const TECHNOLIFE_ORIGINAL_PRICE_SELECTORS = [
+    ".line-through",
+    "[class*='line-through']",
+    "[class*='through']"
+  ];
+  const TECHNOLIFE_DISCOUNT_PERCENT_SELECTORS = [
+    "[class*='discount']",
+    "[class*='percent']"
+  ];
+  const EMALLS_CURRENT_PRICE_SELECTORS = [
+    ".prd-price span",
+    ".price-box .prd-price",
+    ".see-price .green-price",
+    ".see-price .red-price",
+    ".shop-prd-price .last",
+    ".item-price-discount-box",
+    "span.price",
+    "div.price"
+  ];
+  const AMAZON_CURRENT_PRICE_SELECTORS = [
+    ".a-price .a-offscreen",
+    ".a-price-range .a-offscreen",
+    "#corePrice_feature_div .a-offscreen",
+    "#corePriceDisplay_desktop_feature_div .a-offscreen",
+    "[data-cy='price-recipe'] .a-offscreen",
+    "[data-a-size='xl'] .a-offscreen",
+    ".a-price-whole"
+  ];
+  const AMAZON_ORIGINAL_PRICE_SELECTORS = [
+    ".a-price.a-text-price .a-offscreen",
+    ".basisPrice .a-offscreen",
+    ".savingPriceOverride .a-offscreen"
+  ];
+  const EBAY_CURRENT_PRICE_SELECTORS = [
+    ".s-item__price",
+    ".x-price-primary span",
+    "[itemprop='price']",
+    ".x-price-approx__price span",
+    ".display-price"
+  ];
 
   function detectSite() {
     const host = location.hostname;
@@ -78,6 +127,18 @@
     }
     if (host.includes("torob.com")) {
       return "torob";
+    }
+    if (host.includes("technolife.com")) {
+      return "technolife";
+    }
+    if (host.includes("emalls.ir")) {
+      return "emalls";
+    }
+    if (host.includes("amazon.")) {
+      return "amazon";
+    }
+    if (host.includes("ebay.")) {
+      return "ebay";
     }
     return "unsupported";
   }
@@ -88,6 +149,18 @@
     }
     if (site === "torob") {
       return /^\/p\/[^/]+/i.test(location.pathname);
+    }
+    if (site === "technolife") {
+      return /\/product-\d+(?:\/|$)/i.test(location.pathname);
+    }
+    if (site === "emalls") {
+      return /~id~\d+/i.test(location.pathname);
+    }
+    if (site === "amazon") {
+      return /\/(?:dp|gp\/product|gp\/aw\/d)\/[A-Z0-9]{8,}/i.test(location.pathname);
+    }
+    if (site === "ebay") {
+      return /\/itm\/(?:[A-Za-z0-9-]+\/)?\d+/i.test(location.pathname);
     }
     return false;
   }
@@ -114,6 +187,18 @@
         continue;
       }
       if (site === "torob" && !href.includes("/p/")) {
+        continue;
+      }
+      if (site === "technolife" && !/\/product-\d+/i.test(href)) {
+        continue;
+      }
+      if (site === "emalls" && !/~id~\d+/i.test(href)) {
+        continue;
+      }
+      if (site === "amazon" && !/\/(?:dp|gp\/product|gp\/aw\/d)\//i.test(href)) {
+        continue;
+      }
+      if (site === "ebay" && !/\/itm\//i.test(href)) {
         continue;
       }
       if (seen.has(href)) {
@@ -441,6 +526,42 @@
     }
   }
 
+  function normalizeTechnolifeAssetUrl(value) {
+    const raw = normalizeApi.normalizeWhitespace(value || "");
+    if (!raw) {
+      return null;
+    }
+    if (/^https?:\/\//i.test(raw)) {
+      return raw;
+    }
+    if (raw.startsWith("//")) {
+      return `https:${raw}`;
+    }
+    if (raw.startsWith("/")) {
+      return `https://www.technolife.com${raw}`;
+    }
+    return normalizeApi.canonicalizeUrl(raw, "https://www.technolife.com");
+  }
+
+  function getTechnolifeProductPageDataFromNextData() {
+    const nextData = getNextDataJson();
+    const queries = nextData?.props?.pageProps?.dehydratedState?.queries;
+    if (!Array.isArray(queries)) {
+      return null;
+    }
+    for (const queryEntry of queries) {
+      const queryHash = String(queryEntry?.queryHash || "");
+      if (!queryHash.includes("get_product_page")) {
+        continue;
+      }
+      const data = queryEntry?.state?.data;
+      if (data && typeof data === "object") {
+        return data;
+      }
+    }
+    return null;
+  }
+
   function pickDigikalaDetailTitle() {
     const title = normalizeApi.cleanProductTitle(
       textFromDocument([
@@ -607,6 +728,139 @@
     };
   }
 
+  function pickTechnolifeDetailTitle() {
+    const nextDataProduct = getTechnolifeProductPageDataFromNextData();
+    const titleFromNext = normalizeApi.cleanProductTitle(nextDataProduct?.product_info?.title || "");
+    if (titleFromNext) {
+      return titleFromNext;
+    }
+
+    const title = normalizeApi.cleanProductTitle(
+      textFromDocument([
+        "h1",
+        "main h1",
+        '[class*="title"] h1'
+      ])
+    );
+    if (title) {
+      return title;
+    }
+
+    const jsonLdProduct = getJsonLdProduct();
+    if (jsonLdProduct?.name) {
+      return normalizeApi.cleanProductTitle(jsonLdProduct.name);
+    }
+
+    const ogTitle = contentFromMeta('meta[property="og:title"]');
+    if (ogTitle) {
+      return normalizeApi.cleanProductTitle(
+        ogTitle.replace(/^قیمت\s*/u, "").replace(/\s+مشخصات$/u, "").trim()
+      );
+    }
+
+    return normalizeApi.cleanProductTitle(
+      normalizeApi.normalizeWhitespace(document.title || "")
+        .replace(/^قیمت\s*/u, "")
+        .replace(/\s+مشخصات$/u, "")
+        .trim()
+    );
+  }
+
+  function pickTechnolifeDetailPriceInfo() {
+    const nextDataProduct = getTechnolifeProductPageDataFromNextData();
+    const sellerWrapper = Array.isArray(nextDataProduct?.seller_items_component)
+      ? nextDataProduct.seller_items_component[0]
+      : null;
+    const sellerItem = Array.isArray(sellerWrapper?.seller_items)
+      ? sellerWrapper.seller_items[0]
+      : null;
+    const nextPrice = sellerItem?.discounted_price || sellerItem?.price || null;
+    const nextOriginalPrice =
+      sellerItem?.price && sellerItem?.discounted_price && sellerItem.price > sellerItem.discounted_price
+        ? sellerItem.price
+        : null;
+    if (Number.isFinite(Number(nextPrice)) && Number(nextPrice) > 0) {
+      const normalizedPrice = normalizeApi.normalizePriceUnit(nextPrice, "IRR");
+      const normalizedOriginalPrice = normalizeApi.normalizePriceUnit(nextOriginalPrice, "IRR");
+      const discountPercent = normalizeApi.parseDiscountPercent(sellerItem?.discount);
+      return {
+        priceText: normalizedPrice ? normalizeApi.formatToman(normalizedPrice) : String(nextPrice),
+        priceValue: normalizedPrice,
+        originalPriceText: normalizedOriginalPrice ? normalizeApi.formatToman(normalizedOriginalPrice) : "",
+        originalPriceValue: normalizedOriginalPrice,
+        discountPercent: Number.isFinite(discountPercent)
+          ? normalizeApi.formatDiscountPercent(discountPercent)
+          : ""
+      };
+    }
+
+    const jsonLdProduct = getJsonLdProduct();
+    const aggregateOffer = jsonLdProduct?.offers;
+    const firstOffer = Array.isArray(aggregateOffer?.offers)
+      ? aggregateOffer.offers.find((offer) => offer?.price)
+      : null;
+    const offerPrice =
+      firstOffer?.price ||
+      aggregateOffer?.lowPrice ||
+      aggregateOffer?.price ||
+      (Array.isArray(jsonLdProduct?.offers) ? jsonLdProduct.offers[0]?.price : null);
+    const offerCurrency =
+      firstOffer?.priceCurrency ||
+      aggregateOffer?.priceCurrency ||
+      (Array.isArray(jsonLdProduct?.offers) ? jsonLdProduct.offers[0]?.priceCurrency : null);
+    if (offerPrice) {
+      const normalizedPrice = normalizeApi.normalizePriceUnit(offerPrice, offerCurrency || "IRR");
+      return {
+        priceText: normalizedPrice ? normalizeApi.formatToman(normalizedPrice) : String(offerPrice),
+        priceValue: normalizedPrice,
+        originalPriceText: "",
+        originalPriceValue: null,
+        discountPercent: ""
+      };
+    }
+
+    const domInfo = pickPriceInfo(document.querySelector("main") || document.body, "technolife", {
+      preferHighestValue: false
+    });
+    if (domInfo.priceText) {
+      return domInfo;
+    }
+
+    return {
+      priceText: "",
+      priceValue: null,
+      originalPriceText: "",
+      originalPriceValue: null,
+      discountPercent: ""
+    };
+  }
+
+  function pickTechnolifeDetailImage() {
+    const nextDataProduct = getTechnolifeProductPageDataFromNextData();
+    const nextPrimaryImage =
+      normalizeTechnolifeAssetUrl(nextDataProduct?.product_info?.main_image) ||
+      normalizeTechnolifeAssetUrl(nextDataProduct?.product_info?.sub_images?.[0]?.image) ||
+      normalizeTechnolifeAssetUrl(nextDataProduct?.product_info?.image);
+    if (nextPrimaryImage) {
+      return nextPrimaryImage;
+    }
+
+    const jsonLdProduct = getJsonLdProduct();
+    if (typeof jsonLdProduct?.image === "string") {
+      return normalizeTechnolifeAssetUrl(jsonLdProduct.image);
+    }
+    if (Array.isArray(jsonLdProduct?.image) && jsonLdProduct.image[0]) {
+      return normalizeTechnolifeAssetUrl(jsonLdProduct.image[0]);
+    }
+
+    const ogImage = contentFromMeta('meta[property="og:image"]');
+    if (ogImage) {
+      return normalizeTechnolifeAssetUrl(ogImage);
+    }
+
+    return pickImageUrl(document);
+  }
+
   function pickTorobDetailImage() {
     const selectors = [
       'img[alt*="تصویر"]',
@@ -670,9 +924,264 @@
     return null;
   }
 
+  function pickEmallsDetailTitle() {
+    const title = normalizeApi.cleanProductTitle(
+      textFromDocument([
+        "h1",
+        ".single-product h1",
+        ".product-page h1",
+        '[class*="product-title"]'
+      ])
+    );
+    if (title) {
+      return title;
+    }
+
+    const jsonLdProduct = getJsonLdProduct();
+    if (jsonLdProduct?.name) {
+      return normalizeApi.cleanProductTitle(jsonLdProduct.name);
+    }
+
+    const ogTitle = contentFromMeta('meta[property="og:title"]');
+    if (ogTitle) {
+      return normalizeApi.cleanProductTitle(ogTitle);
+    }
+
+    return normalizeApi.cleanProductTitle(document.title || "");
+  }
+
+  function pickEmallsDetailPriceInfo() {
+    const rangeNodes = Array.from(document.querySelectorAll(".see-price .green-price, .see-price .red-price"));
+    const rangeValues = rangeNodes
+      .map((node) => normalizeApi.parsePriceValue(nodeText(node)))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    if (rangeValues.length) {
+      const lowest = Math.min(...rangeValues);
+      return {
+        priceText: normalizeApi.formatToman(lowest),
+        priceValue: lowest,
+        originalPriceText: "",
+        originalPriceValue: null,
+        discountPercent: ""
+      };
+    }
+
+    const domInfo = pickPriceInfo(document.querySelector("main") || document.body, "emalls", {
+      preferHighestValue: false
+    });
+    if (domInfo.priceText) {
+      return domInfo;
+    }
+
+    return {
+      priceText: "",
+      priceValue: null,
+      originalPriceText: "",
+      originalPriceValue: null,
+      discountPercent: ""
+    };
+  }
+
+  function pickAmazonDetailTitle() {
+    const title = normalizeApi.cleanProductTitle(
+      textFromDocument([
+        "#productTitle",
+        "h1 span#title",
+        "h1.a-size-large",
+        "main h1"
+      ])
+    );
+    if (title) {
+      return title;
+    }
+
+    const jsonLdProduct = getJsonLdProduct();
+    if (jsonLdProduct?.name) {
+      return normalizeApi.cleanProductTitle(jsonLdProduct.name);
+    }
+
+    const ogTitle = contentFromMeta('meta[property="og:title"]');
+    if (ogTitle) {
+      return normalizeApi.cleanProductTitle(ogTitle);
+    }
+
+    return normalizeApi.cleanProductTitle(document.title || "");
+  }
+
+  function pickAmazonDetailPriceInfo() {
+    const strictPrice = textFromDocument([
+      "#corePrice_feature_div .a-offscreen",
+      "#corePriceDisplay_desktop_feature_div .a-offscreen",
+      "#corePriceDisplay_desktop_feature_div .a-price .a-offscreen",
+      ".a-price.aok-align-center .a-offscreen"
+    ]);
+    const strictValue = normalizeApi.parsePriceValue(strictPrice || "");
+    if (strictPrice) {
+      return {
+        priceText: strictPrice,
+        priceValue: strictValue,
+        originalPriceText: "",
+        originalPriceValue: null,
+        discountPercent: ""
+      };
+    }
+
+    const domInfo = pickPriceInfo(document.querySelector("main") || document.body, "amazon", {
+      preferHighestValue: false
+    });
+    if (domInfo.priceText) {
+      return domInfo;
+    }
+
+    return {
+      priceText: "",
+      priceValue: null,
+      originalPriceText: "",
+      originalPriceValue: null,
+      discountPercent: ""
+    };
+  }
+
+  function pickAmazonDetailImage() {
+    const selectors = [
+      "#landingImage",
+      "#imgTagWrapperId img",
+      "#main-image-container img",
+      "img[data-old-hires]",
+      "main img"
+    ];
+
+    for (const selector of selectors) {
+      const images = Array.from(document.querySelectorAll(selector));
+      for (const image of images) {
+        const candidate =
+          image.getAttribute("data-old-hires") ||
+          image.currentSrc ||
+          image.src ||
+          image.getAttribute("data-src") ||
+          null;
+        const width = image.naturalWidth || image.width || 0;
+        const height = image.naturalHeight || image.height || 0;
+        if (candidate && (width >= 120 || height >= 120)) {
+          return candidate;
+        }
+      }
+    }
+
+    const ogImage = contentFromMeta('meta[property="og:image"]');
+    if (ogImage) {
+      return ogImage;
+    }
+
+    return pickImageUrl(document);
+  }
+
+  function pickEbayDetailTitle() {
+    const title = normalizeApi.cleanProductTitle(
+      textFromDocument([
+        "h1.x-item-title__mainTitle span",
+        "h1[data-testid='x-item-title']",
+        "h1"
+      ])
+    );
+    if (title) {
+      return title;
+    }
+
+    const jsonLdProduct = getJsonLdProduct();
+    if (jsonLdProduct?.name) {
+      return normalizeApi.cleanProductTitle(jsonLdProduct.name);
+    }
+
+    const ogTitle = contentFromMeta('meta[property="og:title"]');
+    if (ogTitle) {
+      return normalizeApi.cleanProductTitle(ogTitle);
+    }
+
+    return normalizeApi.cleanProductTitle(document.title || "");
+  }
+
+  function pickEbayDetailPriceInfo() {
+    const strictPrice = textFromDocument([
+      ".x-price-primary span",
+      "[itemprop='price']",
+      ".x-price-approx__price span",
+      ".display-price"
+    ]);
+    const strictValue = normalizeApi.parsePriceValue(strictPrice || "");
+    if (strictPrice) {
+      return {
+        priceText: strictPrice,
+        priceValue: strictValue,
+        originalPriceText: "",
+        originalPriceValue: null,
+        discountPercent: ""
+      };
+    }
+
+    const domInfo = pickPriceInfo(document.querySelector("main") || document.body, "ebay", {
+      preferHighestValue: false
+    });
+    if (domInfo.priceText) {
+      return domInfo;
+    }
+
+    return {
+      priceText: "",
+      priceValue: null,
+      originalPriceText: "",
+      originalPriceValue: null,
+      discountPercent: ""
+    };
+  }
+
+  function pickEbayDetailImage() {
+    const selectors = [
+      "img#icImg",
+      ".ux-image-carousel-item img",
+      "img[fetchpriority='high']",
+      "main img"
+    ];
+
+    for (const selector of selectors) {
+      const images = Array.from(document.querySelectorAll(selector));
+      for (const image of images) {
+        const candidate =
+          image.currentSrc ||
+          image.src ||
+          image.getAttribute("data-src") ||
+          null;
+        const width = image.naturalWidth || image.width || 0;
+        const height = image.naturalHeight || image.height || 0;
+        if (candidate && (width >= 120 || height >= 120)) {
+          return candidate;
+        }
+      }
+    }
+
+    const ogImage = contentFromMeta('meta[property="og:image"]');
+    if (ogImage) {
+      return ogImage;
+    }
+
+    return pickImageUrl(document);
+  }
+
   function buildDetailItem(site, title, priceText, imageUrl, position, detailRole) {
-    const detailPriceInfo =
-      site === "digikala" ? pickDigikalaDetailPriceInfo() : pickTorobDetailPriceInfo();
+    let detailPriceInfo = {
+      priceText: priceText || "",
+      priceValue: normalizeApi.parsePriceValue(priceText || ""),
+      originalPriceText: "",
+      originalPriceValue: null,
+      discountPercent: ""
+    };
+    if (site === "digikala") {
+      detailPriceInfo = pickDigikalaDetailPriceInfo();
+    } else if (site === "technolife") {
+      detailPriceInfo = pickTechnolifeDetailPriceInfo();
+    } else if (site === "torob") {
+      detailPriceInfo = pickTorobDetailPriceInfo();
+    }
     return {
       sourceId: normalizeApi.buildSourceId(location.href, site),
       sourceSite: site,
@@ -702,14 +1211,39 @@
   }
 
   function findMainDetailRoot(site) {
-    const selectors =
-      site === "digikala"
+    const selectors = site === "digikala"
+      ? [
+          'h1[data-testid="pdp-product-title"]',
+          ".styles_ProductTitle__content__4nE_l",
+          ".c-product__title",
+          "main h1"
+        ]
+      : site === "technolife"
         ? [
-            'h1[data-testid="pdp-product-title"]',
-            '.styles_ProductTitle__content__4nE_l',
-            ".c-product__title",
-            "main h1"
+            "main h1",
+            "h1",
+            '[class*="title"] h1'
           ]
+        : site === "emalls"
+          ? [
+              "h1",
+              ".single-product",
+              ".product-page",
+              "main h1"
+            ]
+          : site === "amazon"
+            ? [
+                "#productTitle",
+                "#dp-container",
+                "#centerCol",
+                "main h1"
+              ]
+            : site === "ebay"
+              ? [
+                  "h1.x-item-title__mainTitle",
+                  "#LeftSummaryPanel",
+                  "main h1"
+                ]
         : [
             "h1",
             '[data-cy="pdp-product-title"]',
@@ -848,6 +1382,94 @@
     }
   }
 
+  function extractTechnolifeSuggestedFromNextData(mainSourceId, startPosition) {
+    const productPageData = getTechnolifeProductPageDataFromNextData();
+    const tabs = Array.isArray(productPageData?.related_products)
+      ? productPageData.related_products
+      : [];
+    const pool = [];
+
+    for (const tab of tabs) {
+      const items = Array.isArray(tab?.TabContent) ? tab.TabContent : [];
+      for (const item of items) {
+        pool.push(item);
+      }
+    }
+
+    const records = [];
+    const seen = new Set([mainSourceId]);
+    let position = startPosition;
+
+    for (const item of pool) {
+      const code = String(item?.code || "");
+      const productId = code.match(/^TLP-(\d+)$/i)?.[1];
+      if (!productId) {
+        continue;
+      }
+      const productUrl = normalizeApi.canonicalizeUrl(
+        `/product-${productId}`,
+        "https://www.technolife.com"
+      );
+      if (!productUrl || productUrl === normalizeApi.canonicalizeUrl(location.href)) {
+        continue;
+      }
+
+      const sourceId = normalizeApi.buildSourceId(productUrl, "technolife");
+      if (seen.has(sourceId)) {
+        continue;
+      }
+      seen.add(sourceId);
+
+      const title = normalizeApi.cleanProductTitle(item?.name || item?.alt_image || "");
+      if (!title) {
+        continue;
+      }
+
+      const discountedPrice = normalizeApi.normalizePriceUnit(item?.discounted_price, "IRR");
+      const normalPrice = normalizeApi.normalizePriceUnit(item?.normal_price, "IRR");
+      const priceValue = discountedPrice || normalPrice || null;
+      const originalPriceValue = discountedPrice && normalPrice && normalPrice > discountedPrice
+        ? normalPrice
+        : null;
+      const discountPercent = normalizeApi.parseDiscountPercent(item?.discount);
+
+      records.push({
+        element: null,
+        item: {
+          sourceId,
+          sourceSite: "technolife",
+          pageUrl: normalizeApi.canonicalizeUrl(location.href),
+          productUrl,
+          title,
+          displayPriceText: priceValue ? normalizeApi.formatToman(priceValue) : "",
+          displayPriceValue: priceValue,
+          displayOriginalPriceText: originalPriceValue ? normalizeApi.formatToman(originalPriceValue) : "",
+          displayOriginalPriceValue: originalPriceValue,
+          displayDiscountPercent: Number.isFinite(discountPercent)
+            ? normalizeApi.formatDiscountPercent(discountPercent)
+            : "",
+          sourcePriceText: priceValue ? normalizeApi.formatToman(priceValue) : "",
+          sourcePriceValue: priceValue,
+          sourceOriginalPriceText: originalPriceValue ? normalizeApi.formatToman(originalPriceValue) : "",
+          sourceOriginalPriceValue: originalPriceValue,
+          sourceDiscountPercent: Number.isFinite(discountPercent)
+            ? normalizeApi.formatDiscountPercent(discountPercent)
+            : "",
+          brand: normalizeApi.inferBrand(title),
+          imageUrl: normalizeTechnolifeAssetUrl(item?.image),
+          position,
+          guideNumber: position + 1,
+          seenAt: Date.now(),
+          detailRole: "suggested",
+          pageSection: "suggested"
+        }
+      });
+      position += 1;
+    }
+
+    return records;
+  }
+
   async function extractDetailItem(site) {
     if (site === "digikala") {
       const title = pickDigikalaDetailTitle();
@@ -898,6 +1520,104 @@
       }
       const apiSuggested = await fetchTorobSimilarItems(1);
       return records.concat(apiSuggested);
+    }
+
+    if (site === "technolife") {
+      const title = pickTechnolifeDetailTitle();
+      if (!title) {
+        return [];
+      }
+      const priceInfo = pickTechnolifeDetailPriceInfo();
+      const mainItem = buildDetailItem(
+        site,
+        title,
+        priceInfo.priceText,
+        pickTechnolifeDetailImage(),
+        0,
+        "main"
+      );
+      const records = [
+        {
+          element: findMainDetailRoot(site),
+          item: mainItem
+        }
+      ];
+
+      const nextDataSuggested = extractTechnolifeSuggestedFromNextData(mainItem.sourceId, 1);
+      if (nextDataSuggested.length) {
+        return records.concat(nextDataSuggested);
+      }
+
+      return records;
+    }
+
+    if (site === "emalls") {
+      const title = pickEmallsDetailTitle();
+      if (!title) {
+        return [];
+      }
+      const priceInfo = pickEmallsDetailPriceInfo();
+      const mainItem = buildDetailItem(
+        site,
+        title,
+        priceInfo.priceText,
+        pickImageUrl(document),
+        0,
+        "main"
+      );
+      const records = [
+        {
+          element: findMainDetailRoot(site),
+          item: mainItem
+        }
+      ];
+      return records.concat(extractSuggestedDetailItems(site, mainItem.sourceId, 1));
+    }
+
+    if (site === "amazon") {
+      const title = pickAmazonDetailTitle();
+      if (!title) {
+        return [];
+      }
+      const priceInfo = pickAmazonDetailPriceInfo();
+      const mainItem = buildDetailItem(
+        site,
+        title,
+        priceInfo.priceText,
+        pickAmazonDetailImage(),
+        0,
+        "main"
+      );
+      const records = [
+        {
+          element: findMainDetailRoot(site),
+          item: mainItem
+        }
+      ];
+      return records.concat(extractSuggestedDetailItems(site, mainItem.sourceId, 1));
+    }
+
+    if (site === "ebay") {
+      const title = pickEbayDetailTitle();
+      if (!title) {
+        return [];
+      }
+      const priceInfo = pickEbayDetailPriceInfo();
+      const mainItem = buildDetailItem(
+        site,
+        title,
+        priceInfo.priceText,
+        pickEbayDetailImage(),
+        0,
+        "main"
+      );
+      const records = [
+        {
+          element: findMainDetailRoot(site),
+          item: mainItem
+        }
+      ];
+      return records.concat(extractSuggestedDetailItems(site, mainItem.sourceId, 1));
     }
 
     return [];
@@ -1023,10 +1743,29 @@
   }
 
   function pickPriceInfo(root, site, options) {
-    const currentSelectors =
-      site === "digikala" ? DIGIKALA_CURRENT_PRICE_SELECTORS : TOROB_CURRENT_PRICE_SELECTORS;
-    const originalSelectors = site === "digikala" ? DIGIKALA_ORIGINAL_PRICE_SELECTORS : [];
-    const discountSelectors = site === "digikala" ? DIGIKALA_DISCOUNT_PERCENT_SELECTORS : [];
+    const currentSelectors = site === "digikala"
+      ? DIGIKALA_CURRENT_PRICE_SELECTORS
+      : site === "technolife"
+        ? TECHNOLIFE_CURRENT_PRICE_SELECTORS
+        : site === "emalls"
+          ? EMALLS_CURRENT_PRICE_SELECTORS
+          : site === "amazon"
+            ? AMAZON_CURRENT_PRICE_SELECTORS
+            : site === "ebay"
+              ? EBAY_CURRENT_PRICE_SELECTORS
+              : TOROB_CURRENT_PRICE_SELECTORS;
+    const originalSelectors = site === "digikala"
+      ? DIGIKALA_ORIGINAL_PRICE_SELECTORS
+      : site === "technolife"
+        ? TECHNOLIFE_ORIGINAL_PRICE_SELECTORS
+        : site === "amazon"
+          ? AMAZON_ORIGINAL_PRICE_SELECTORS
+          : [];
+    const discountSelectors = site === "digikala"
+      ? DIGIKALA_DISCOUNT_PERCENT_SELECTORS
+      : site === "technolife"
+        ? TECHNOLIFE_DISCOUNT_PERCENT_SELECTORS
+        : [];
     const preferHighestValue = Boolean(options?.preferHighestValue);
 
     const priceText =
@@ -1037,7 +1776,7 @@
         preferHighestValue
       });
     const originalPriceText =
-      site === "digikala"
+      originalSelectors.length
         ? chooseBestPriceText(collectPriceNodes(root, originalSelectors), {
             preferHighestValue: true
           })

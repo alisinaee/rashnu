@@ -1,10 +1,10 @@
 # Dirob
 
-Dirob is a Chrome side-panel extension for comparing Digikala and Torob prices while browsing listing and product pages.
+Dirob is a Chrome side-panel extension for comparing prices across shopping providers while browsing supported listing and product pages.
 
 ## Features
 
-- Side-panel comparison between Digikala and Torob
+- Side-panel comparison across Torob, Digikala, Technolife, Emalls, Amazon, and eBay
 - Listing and detail page support
 - Guide numbers on the page and in the panel
 - Element select mode
@@ -23,7 +23,7 @@ Use this when the extension is not from Chrome Web Store.
 4. Select this repository folder (must contain `manifest.json`).
 5. Find **Dirob** in extension cards.
 6. (Optional) Click the pin icon in Chrome toolbar so Dirob is always visible.
-7. Open a Torob or Digikala page, then open Dirob from Chrome side panel.
+7. Open a Digikala, Torob, Technolife, Emalls, Amazon, or eBay page, then open Dirob from Chrome side panel.
 8. After any local code change, go back to `chrome://extensions` and click `Reload` on the Dirob card.
 
 ## Development
@@ -48,7 +48,7 @@ Foreground/manual mode:
 ./run-dirob-helper
 ```
 
-After setup, open Digikala or Torob pages and use the Dirob side panel.
+After setup, open Digikala, Torob, Technolife, Emalls, Amazon, or eBay pages and use the Dirob side panel.
 
 ## License
 

@@ -48,6 +48,13 @@
       priceValue:
         rawCandidate.price ||
         normalizeApi.parsePriceValue(rawCandidate.price_text || rawCandidate.priceText),
+      originalPriceText: rawCandidate.originalPriceText || rawCandidate.original_price_text || "",
+      originalPriceValue:
+        rawCandidate.originalPriceValue ||
+        rawCandidate.originalPrice ||
+        rawCandidate.original_price ||
+        null,
+      discountPercent: rawCandidate.discountPercent || rawCandidate.discount_percent || "",
       targetSite: rawCandidate.targetSite || rawCandidate.site || "torob",
       targetUrl,
       moreInfoUrl: rawCandidate.more_info_url || rawCandidate.moreInfoUrl || null,

@@ -20,8 +20,21 @@
 - Ensure top reload should work without refreshing the page.
 - Ensure changing lang should not require refreshing.
 - Ensure in RTL the per-item corner tools (reload/find) should be on the left side to avoid overlap with title/status content.
+- Prefer a dedicated extension tab for table-heavy global search workflows instead of forcing them into the side panel.
 
 ## Recent Changes (Last 20)
+### 2026-04-11T22:20:00+03:30
+- Changed files: `src/search/search.html`, `src/search/search.js`, `src/search/search.css`
+- Summary: Split the global-search settings into a compact sticky strip below the header, added measured sticky offsets so the search bar docks beneath that strip after search, and turned the empty state into a centered hero search layout instead of a full stacked settings card.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:10f3902178be -->
+
+### 2026-04-11T16:44:23+0330
+- Changed files: `src/background.js`, `src/lib/match.js`, `src/panel/panel.html`, `src/panel/panel.js`, `src/panel/panel.css`, `src/search/search.html`, `src/search/search.js`, `src/search/search.css`
+- Summary: Added a new panel header search button that opens a dedicated Rashnu global-search tab, implemented a background `RASHNU_GLOBAL_SEARCH` provider API with configurable per-provider result limits, and built a keyboard-driven search/table UI with row-click open, compact action buttons, sortable columns, a panel-style grouping switch, `- / +` max-result stepper, and compact `T` price formatting.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:5f4cdb544d2a -->
+
 ### 2026-04-11T11:43:56+03:30
 - Changed files: `manifest.json`, `README.md`, `src/background.js`, `src/content.js`, `src/help/help.html`, `src/help/help.js`, `src/lib/extract-listing-cards.js`, `src/lib/logger.js`, +11 more
 - Summary: Renamed GitHub repository to alisinaee/rashnu and performed full project token rename from dirob/Dirob/DIROB to rashnu/Rashnu/RASHNU, including helper script filenames and artifact paths.
@@ -143,4 +156,4 @@
 <!-- fingerprint:72ca5b4f58c4 -->
 
 ## Last Updated
-- 2026-04-11T11:43:56+03:30
+- 2026-04-11T22:20:00+03:30

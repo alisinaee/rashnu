@@ -243,6 +243,13 @@ html[dir="ltr"] .brand-block > div {
   flex: 0 0 auto;
 }
 
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  margin: 0 auto;
+}
+
 .icon-button.is-active {
   border-color: rgba(255, 140, 66, 0.4);
   background: var(--accent-soft);

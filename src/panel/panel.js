@@ -18,6 +18,7 @@
   const fontMetaText = document.querySelector("[data-font-meta]");
   const reloadAllButton = document.querySelector('[data-action="reload-all"]');
   const toggleSettingsButton = document.querySelector('[data-action="toggle-settings"]');
+  const openSearchButton = document.querySelector('[data-action="open-search"]');
   const helpButton = document.querySelector('[data-action="open-help"]');
   const themeButton = document.querySelector('[data-action="cycle-theme"]');
   const closeSettingsButton = document.querySelector('[data-action="close-settings"]');
@@ -82,6 +83,8 @@
       settingsOpenHint: "باز کردن تنظیمات Rashnu.",
       settingsCloseHint: "بستن پنل تنظیمات Rashnu.",
       help: "راهنما",
+      searchTab: "جست‌وجوی سراسری",
+      searchTabHint: "باز کردن تب جست‌وجوی سراسری Rashnu.",
       helpHint: "باز کردن صفحه راهنمای Rashnu.",
       theme: "تم",
       theme_system: "خودکار",
@@ -203,6 +206,8 @@
       settingsOpenHint: "Open Rashnu settings.",
       settingsCloseHint: "Close Rashnu settings.",
       help: "Help",
+      searchTab: "Global Search",
+      searchTabHint: "Open the Rashnu global search tab.",
       helpHint: "Open the Rashnu guide page.",
       theme: "Theme",
       theme_system: "System",
@@ -413,6 +418,12 @@
     helpButton.addEventListener("click", async () => {
       await chrome.tabs.create({
         url: chrome.runtime.getURL("src/help/help.html")
+      });
+    });
+
+    openSearchButton.addEventListener("click", async () => {
+      await chrome.tabs.create({
+        url: chrome.runtime.getURL("src/search/search.html")
       });
     });
 
@@ -671,6 +682,7 @@
       toggleSettingsButton,
       Boolean(state?.settingsOpen) ? translation.settingsCloseHint : translation.settingsOpenHint
     );
+    setTitleAndAria(openSearchButton, translation.searchTabHint);
     setTitleAndAria(helpButton, translation.helpHint);
     setTitleAndAria(closeSettingsButton, translation.settingsCloseHint);
     setTitleAndAria(brandLink, translation.openRepository);

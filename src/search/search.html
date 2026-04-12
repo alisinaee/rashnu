@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rashnu Global Search</title>
+    <link rel="stylesheet" href="search.css">
+  </head>
+  <body>
+    <main class="search-page" data-mode="empty">
+      <div class="search-ambient search-ambient--one" aria-hidden="true"></div>
+      <div class="search-ambient search-ambient--two" aria-hidden="true"></div>
+
+      <div class="top-stack" data-role="top-stack">
+        <header class="page-header">
+          <a
+            class="brand-block"
+            href="https://github.com/alisinaee/rashnu"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            <div class="brand-mark">R</div>
+            <div>
+              <h1 data-role="page-title">Global Search</h1>
+              <p data-role="page-subtitle">Search across every enabled provider in one table.</p>
+            </div>
+          </a>
+          <div class="page-badges">
+            <span class="page-badge" data-role="provider-scope"></span>
+            <span class="page-badge" data-role="shortcut-hint"></span>
+          </div>
+        </header>
+
+        <section class="settings-shell">
+          <div class="search-settings">
+            <button class="setting-switch-row" type="button" data-action="toggle-grouping" aria-pressed="true">
+              <span class="switch-label" data-role="grouping-label"></span>
+              <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+            </button>
+            <div class="stepper-field">
+              <span class="stepper-label" data-role="max-results-label"></span>
+              <div class="stepper-control">
+                <button class="stepper-button" type="button" data-action="decrease-max-results" aria-label="Decrease">-</button>
+                <div class="stepper-value" data-role="max-results-value">3</div>
+                <button class="stepper-button" type="button" data-action="increase-max-results" aria-label="Increase">+</button>
+              </div>
+            </div>
+          </div>
+
+          <p class="search-provider-warning" data-role="provider-warning"></p>
+        </section>
+      </div>
+
+      <section class="content-shell">
+        <section class="search-shell">
+          <form class="search-card" data-role="search-form">
+            <div class="search-input-wrap">
+              <span class="search-input-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="6"></circle>
+                  <line x1="20" y1="20" x2="15.7" y2="15.7"></line>
+                </svg>
+              </span>
+              <input
+                type="search"
+                autocomplete="off"
+                spellcheck="false"
+                data-role="query-input"
+              >
+              <button class="primary-button" type="submit" data-role="search-submit"></button>
+            </div>
+
+            <div class="toolbar-meta">
+              <div class="provider-chip-list" data-role="provider-chips"></div>
+              <div class="toolbar-actions">
+                <button class="secondary-button" type="submit" data-action="run-search"></button>
+                <button class="secondary-button" type="button" data-action="open-all-searches"></button>
+              </div>
+            </div>
+          </form>
+
+          <div class="hero-copy" data-role="hero-copy">
+            <h2 data-role="hero-title"></h2>
+            <p data-role="hero-body"></p>
+          </div>
+        </section>
+
+        <section class="results-shell">
+          <div class="provider-blocker" data-role="provider-blocker"></div>
+          <div class="status-bar" data-role="status-bar"></div>
+
+          <div class="table-wrap" data-role="table-wrap">
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th class="col-provider" data-role="col-provider"></th>
+                  <th class="col-rank" data-role="col-rank"></th>
+                  <th class="col-title" data-role="col-title"></th>
+                  <th class="col-price" data-role="col-price"></th>
+                  <th class="col-original" data-role="col-original"></th>
+                  <th class="col-discount" data-role="col-discount"></th>
+                  <th class="col-confidence" data-role="col-confidence"></th>
+                  <th class="col-actions" data-role="col-actions"></th>
+                </tr>
+              </thead>
+              <tbody data-role="results-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="../lib/normalize.js"></script>
+    <script src="search.js"></script>
+  </body>
+</html>

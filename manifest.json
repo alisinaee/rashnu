@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Rashnu",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Compare listings across Digikala, Torob, Technolife, Emalls, Amazon, and eBay.",
   "icons": {
     "16": "assets/extension-icons/icon-inactive-16.png",

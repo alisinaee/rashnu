@@ -339,6 +339,11 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return true;
     }
 
+    if (message.type === "RASHNU_GLOBAL_SEARCH") {
+      performGlobalSearch(message.payload).then(sendResponse);
+      return true;
+    }
+
     if (message.type === "RASHNU_LOG_EVENT") {
       if (!debugEnabled || !autoLogsEnabled) {
         sendResponse({ ok: true, skipped: true });
@@ -1433,6 +1438,406 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     return mergeSourceItems(baseItem, candidate);
   }
 
+  function buildGlobalSearchQuery(value) {
+    const rawQuery = String(value || "").trim();
+    if (!rawQuery) {
+      return "";
+    }
+    const normalized =
+      globalThis.RashnuNormalize.buildSearchQuery(rawQuery) ||
+      globalThis.RashnuNormalize.cleanProductTitle(rawQuery) ||
+      rawQuery;
+    return globalThis.RashnuNormalize.normalizeWhitespace(normalized);
+  }
+
+  function buildGlobalSearchProbeItem(query) {
+    return {
+      sourceId: `global:${globalThis.RashnuNormalize.normalizeText(query)}`,
+      sourceSite: "global",
+      title: query,
+      brand: globalThis.RashnuNormalize.inferBrand(query)
+    };
+  }
+
+  function normalizeGlobalSearchProviders(value) {
+    const input = Array.isArray(value) ? value : PROVIDER_SITES;
+    const seen = new Set();
+    const output = [];
+    for (const site of input) {
+      const normalized = normalizeProviderSite(site);
+      if (!normalized || seen.has(normalized)) {
+        continue;
+      }
+      seen.add(normalized);
+      output.push(normalized);
+    }
+    return output;
+  }
+
+  function classifyGlobalSearchCandidates(ranked) {
+    if (!ranked.length) {
+      return {
+        status: "not_found",
+        reason: "no_results"
+      };
+    }
+    const top = ranked[0];
+    if (Number(top?.confidence || 0) >= 0.72) {
+      return {
+        status: "matched",
+        reason: top?.reasons?.[0] || "score_match"
+      };
+    }
+    return {
+      status: "low_confidence",
+      reason: top?.reasons?.[0] || "results_available"
+    };
+  }
+
+  function buildGlobalSearchRow(provider, candidate, rank, searchUrl) {
+    const priceValue =
+      Number.isFinite(candidate?.priceValue) ? candidate.priceValue : Number.isFinite(candidate?.price) ? candidate.price : null;
+    const originalPriceValue =
+      Number.isFinite(candidate?.originalPriceValue)
+        ? candidate.originalPriceValue
+        : Number.isFinite(candidate?.originalPrice)
+          ? candidate.originalPrice
+          : null;
+    return {
+      provider,
+      rank,
+      title: candidate?.title || "",
+      priceText: candidate?.priceText || null,
+      priceValue,
+      originalPriceText: candidate?.originalPriceText || null,
+      originalPriceValue,
+      discountPercent: candidate?.discountPercent || null,
+      confidence: Number.isFinite(candidate?.confidence) ? candidate.confidence : 0,
+      targetUrl: candidate?.targetUrl || searchUrl,
+      searchUrl
+    };
+  }
+
+  function buildGlobalSearchProviderResponse(provider, query, ranked, options = {}) {
+    const searchUrl = options.searchUrl || buildSearchUrlForSite(provider, query);
+    const classification = classifyGlobalSearchCandidates(ranked);
+    const maxResults = clampGlobalSearchResultLimit(options.maxResults);
+    return {
+      provider,
+      status: options.status || classification.status,
+      reason: options.reason || classification.reason,
+      searchUrl,
+      results: ranked.slice(0, maxResults).map((candidate, index) => buildGlobalSearchRow(provider, candidate, index + 1, searchUrl))
+    };
+  }
+
+  function buildGlobalSearchErrorResponse(provider, query, reason, searchUrl) {
+    return {
+      provider,
+      status: "error",
+      reason: reason || "request_failed",
+      searchUrl: searchUrl || buildSearchUrlForSite(provider, query),
+      results: []
+    };
+  }
+
+  function clampGlobalSearchResultLimit(value) {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed)) {
+      return 3;
+    }
+    return Math.max(1, Math.min(10, parsed));
+  }
+
+  async function performGlobalSearch(payload) {
+    const query = buildGlobalSearchQuery(payload?.query);
+    const requestedProviders = normalizeGlobalSearchProviders(payload?.providers);
+    const maxResults = clampGlobalSearchResultLimit(payload?.maxResults);
+    if (!query) {
+      return {
+        ok: false,
+        reason: "empty_query",
+        query: "",
+        requestedProviders,
+        maxResults,
+        providers: {}
+      };
+    }
+    if (!requestedProviders.length) {
+      return {
+        ok: false,
+        reason: "no_providers_enabled",
+        query,
+        requestedProviders: [],
+        maxResults,
+        providers: {}
+      };
+    }
+
+    addLog("info", "background", "global_search_started", {
+      query,
+      providers: requestedProviders
+    });
+
+    const providerEntries = await Promise.all(
+      requestedProviders.map(async (provider) => {
+        try {
+          return [provider, await fetchGlobalSearchByProvider(provider, query, maxResults)];
+        } catch (error) {
+          addLog("error", "background", "global_search_provider_failed", {
+            query,
+            provider,
+            error: serializeError(error)
+          });
+          return [provider, buildGlobalSearchErrorResponse(provider, query, error?.message || "request_failed")];
+        }
+      })
+    );
+
+    const providers = Object.fromEntries(providerEntries);
+    addLog("info", "background", "global_search_completed", {
+      query,
+      providers: requestedProviders,
+      statuses: providerEntries.map(([provider, result]) => ({
+        provider,
+        status: result?.status || "unknown"
+      }))
+    });
+
+    return {
+      ok: true,
+      query,
+      requestedProviders,
+      maxResults,
+      providers
+    };
+  }
+
+  async function fetchGlobalSearchByProvider(provider, query, maxResults) {
+    if (provider === "torob") {
+      return fetchTorobGlobalSearch(query, maxResults);
+    }
+    if (provider === "digikala") {
+      return fetchDigikalaGlobalSearch(query, maxResults);
+    }
+    if (provider === "technolife") {
+      return fetchTechnolifeGlobalSearch(query, maxResults);
+    }
+    if (provider === "emalls") {
+      return fetchEmallsGlobalSearch(query, maxResults);
+    }
+    if (provider === "amazon") {
+      return fetchAmazonGlobalSearch(query, maxResults);
+    }
+    if (provider === "ebay") {
+      return fetchEbayGlobalSearch(query, maxResults);
+    }
+    throw new Error(`unsupported_provider:${provider}`);
+  }
+
+  async function fetchTorobGlobalSearch(query, maxResults) {
+    const probeItem = buildGlobalSearchProbeItem(query);
+    const searchPayload = await fetchJsonWithRetry(buildTorobApiSearchUrl(query));
+    const ranked = globalThis.RashnuMatch.rankCandidates(probeItem, searchPayload?.results || []);
+    return buildGlobalSearchProviderResponse("torob", query, ranked, {
+      searchUrl: globalThis.RashnuNormalize.buildTorobSearchUrl(query),
+      maxResults
+    });
+  }
+
+  async function fetchDigikalaGlobalSearch(query, maxResults) {
+    const probeItem = buildGlobalSearchProbeItem(query);
+    try {
+      const searchPayload = await fetchJsonWithRetry(buildDigikalaApiSearchUrl(query));
+      const ranked = globalThis.RashnuMatch.rankCandidates(
+        probeItem,
+        (searchPayload?.data?.products || []).slice(0, 12).map(normalizeDigikalaCandidate)
+      );
+      return buildGlobalSearchProviderResponse("digikala", query, ranked, {
+        searchUrl: globalThis.RashnuNormalize.buildDigikalaSearchUrl(query),
+        maxResults
+      });
+    } catch (error) {
+      if (!isRecoverableProviderFetchError(error)) {
+        throw error;
+      }
+      return buildGlobalSearchErrorResponse("digikala", query, "network_unreachable");
+    }
+  }
+
+  async function fetchTechnolifeGlobalSearch(query, maxResults) {
+    const probeItem = buildGlobalSearchProbeItem(query);
+    try {
+      let buildId = await getTechnolifeBuildId();
+      let searchPayload;
+      try {
+        searchPayload = await fetchJsonWithRetry(buildTechnolifeApiSearchUrl(buildId, query));
+      } catch (error) {
+        const shouldRefreshBuildId =
+          String(error?.message || "") === "http_404" || String(error?.message || "") === "technolife_build_id_missing";
+        if (!shouldRefreshBuildId) {
+          throw error;
+        }
+        buildId = await getTechnolifeBuildId({ force: true });
+        searchPayload = await fetchJsonWithRetry(buildTechnolifeApiSearchUrl(buildId, query));
+      }
+      const ranked = globalThis.RashnuMatch.rankCandidates(
+        probeItem,
+        extractTechnolifeSearchResults(searchPayload).slice(0, 15).map(normalizeTechnolifeCandidate)
+      );
+      return buildGlobalSearchProviderResponse("technolife", query, ranked, {
+        searchUrl: globalThis.RashnuNormalize.buildTechnolifeSearchUrl(query),
+        maxResults
+      });
+    } catch (error) {
+      if (!isRecoverableProviderFetchError(error)) {
+        throw error;
+      }
+      return buildGlobalSearchErrorResponse("technolife", query, "network_unreachable");
+    }
+  }
+
+  async function fetchEmallsGlobalSearch(query, maxResults) {
+    const probeItem = buildGlobalSearchProbeItem(query);
+    try {
+      const apiRawText = await fetchTextWithRetry(buildEmallsApiSearchUrl(), {
+        method: "POST",
+        headers: {
+          "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "x-requested-with": "XMLHttpRequest"
+        },
+        body: buildEmallsApiSearchBody(query)
+      });
+      const apiCandidates = extractEmallsApiResults(safeParseJson(apiRawText)).map(normalizeEmallsCandidate);
+      let htmlCandidates = [];
+      if (!apiCandidates.length || !apiCandidates.some((candidate) => hasMeaningfulValue(candidate?.priceText || candidate?.price))) {
+        try {
+          const html = await fetchTextWithRetry(globalThis.RashnuNormalize.buildEmallsSearchUrl(query));
+          htmlCandidates = extractEmallsSearchCandidatesFromHtml(html);
+        } catch (htmlError) {
+          if (!isRecoverableProviderFetchError(htmlError)) {
+            throw htmlError;
+          }
+        }
+      }
+      const mergedCandidates = mergeCandidatesByTargetUrl(apiCandidates, htmlCandidates);
+      const ranked = globalThis.RashnuMatch.rankCandidates(probeItem, mergedCandidates.slice(0, 18));
+      return buildGlobalSearchProviderResponse("emalls", query, ranked, {
+        searchUrl: globalThis.RashnuNormalize.buildEmallsSearchUrl(query),
+        maxResults
+      });
+    } catch (error) {
+      if (!isRecoverableProviderFetchError(error)) {
+        throw error;
+      }
+      return buildGlobalSearchErrorResponse("emalls", query, "network_unreachable");
+    }
+  }
+
+  async function fetchAmazonGlobalSearch(query, maxResults) {
+    const probeItem = buildGlobalSearchProbeItem(query);
+    const marketplaceQuery = await translateQueryForGlobalMarketplace(query, "amazon");
+    const searchUrl = globalThis.RashnuNormalize.buildAmazonSearchUrl(marketplaceQuery);
+    let directCandidates = [];
+    let proxyCandidates = [];
+    let blockedByAntibot = false;
+    try {
+      const html = await fetchTextWithRetry(searchUrl, {
+        headers: {
+          "accept-language": "en-US,en;q=0.9"
+        }
+      });
+      blockedByAntibot = isAmazonBlockedResponse(html);
+      if (!blockedByAntibot) {
+        directCandidates = extractAmazonSearchCandidates(html).slice(0, 18);
+      }
+      if (!directCandidates.length) {
+        try {
+          const proxyText = await fetchMarketplaceProxyText(searchUrl, "amazon");
+          proxyCandidates = extractAmazonSearchCandidatesFromMarkdown(proxyText).slice(0, 18);
+        } catch (proxyError) {
+          if (!isRecoverableProviderFetchError(proxyError)) {
+            throw proxyError;
+          }
+        }
+      }
+      const ranked = globalThis.RashnuMatch.rankCandidates(
+        probeItem,
+        (directCandidates.length ? directCandidates : proxyCandidates).slice(0, 12)
+      );
+      if (!ranked.length && blockedByAntibot) {
+        return buildGlobalSearchProviderResponse("amazon", query, ranked, {
+          searchUrl,
+          status: "not_found",
+          reason: "blocked_by_antibot",
+          maxResults
+        });
+      }
+      return buildGlobalSearchProviderResponse("amazon", query, ranked, {
+        searchUrl,
+        reason: ranked.length ? null : "no_results",
+        maxResults
+      });
+    } catch (error) {
+      if (!isRecoverableProviderFetchError(error)) {
+        throw error;
+      }
+      return buildGlobalSearchErrorResponse("amazon", query, "network_unreachable", searchUrl);
+    }
+  }
+
+  async function fetchEbayGlobalSearch(query, maxResults) {
+    const probeItem = buildGlobalSearchProbeItem(query);
+    const marketplaceQuery = await translateQueryForGlobalMarketplace(query, "ebay");
+    const searchUrl = globalThis.RashnuNormalize.buildEbaySearchUrl(marketplaceQuery);
+    let directCandidates = [];
+    let proxyCandidates = [];
+    let blockedByAntibot = false;
+    try {
+      const html = await fetchTextWithRetry(searchUrl, {
+        headers: {
+          "accept-language": "en-US,en;q=0.9"
+        }
+      });
+      blockedByAntibot = isEbayBlockedResponse(html);
+      if (!blockedByAntibot) {
+        directCandidates = extractEbaySearchCandidates(html).slice(0, 18);
+      }
+      if (!directCandidates.length) {
+        try {
+          const proxyText = await fetchMarketplaceProxyText(searchUrl, "ebay");
+          proxyCandidates = extractEbaySearchCandidatesFromMarkdown(proxyText).slice(0, 18);
+        } catch (proxyError) {
+          if (!isRecoverableProviderFetchError(proxyError)) {
+            throw proxyError;
+          }
+        }
+      }
+      const ranked = globalThis.RashnuMatch.rankCandidates(
+        probeItem,
+        (directCandidates.length ? directCandidates : proxyCandidates).slice(0, 12)
+      );
+      if (!ranked.length && blockedByAntibot) {
+        return buildGlobalSearchProviderResponse("ebay", query, ranked, {
+          searchUrl,
+          status: "not_found",
+          reason: "blocked_by_antibot",
+          maxResults
+        });
+      }
+      return buildGlobalSearchProviderResponse("ebay", query, ranked, {
+        searchUrl,
+        reason: ranked.length ? null : "no_results",
+        maxResults
+      });
+    } catch (error) {
+      if (!isRecoverableProviderFetchError(error)) {
+        throw error;
+      }
+      return buildGlobalSearchErrorResponse("ebay", query, "network_unreachable", searchUrl);
+    }
+  }
+
   async function fetchTorobMatch(item, query) {
     const startedAt = Date.now();
     const searchPayload = await fetchJsonWithRetry(buildTorobApiSearchUrl(query));
@@ -2001,6 +2406,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     return {
       title,
       price: priceValue,
+      priceValue,
       priceText: priceValue ? formatPrice(priceValue) : "نامشخص",
       targetSite: "technolife",
       targetUrl,
@@ -2025,6 +2431,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     return {
       title,
       price: priceValue,
+      priceValue,
       priceText: normalizedPriceText || (priceValue ? formatPrice(priceValue) : null),
       targetSite: "emalls",
       targetUrl,
@@ -2102,6 +2509,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       candidates.push({
         title,
         price: priceValue,
+        priceValue,
         priceText,
         targetSite: "emalls",
         targetUrl,
@@ -2401,8 +2809,10 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     return {
       title,
       price,
+      priceValue: price,
       priceText: price ? formatPrice(price) : "نامشخص",
       originalPrice,
+      originalPriceValue: originalPrice,
       originalPriceText: originalPrice ? formatPrice(originalPrice) : null,
       discountPercent,
       targetSite: "digikala",

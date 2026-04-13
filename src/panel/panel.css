@@ -236,18 +236,24 @@ html[dir="ltr"] .brand-block > div {
 }
 
 .icon-button {
+  display: inline-grid;
+  place-items: center;
   width: 38px;
   height: 38px;
+  padding: 0;
   border-radius: 12px;
-  font-size: 18px;
+  font-size: 0;
+  line-height: 0;
   flex: 0 0 auto;
 }
 
-.icon-button svg {
+.icon-button svg,
+.icon-button .icon-symbol {
   width: 16px;
   height: 16px;
   display: block;
-  margin: 0 auto;
+  margin: 0;
+  flex: 0 0 auto;
 }
 
 .icon-button.is-active {
@@ -266,6 +272,10 @@ html[dir="ltr"] .brand-block > div {
   flex: 0 0 auto;
   padding: 10px;
   display: none;
+  max-height: min(58vh, calc(100vh - 168px));
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .settings-panel.is-open {
@@ -296,7 +306,6 @@ html[dir="ltr"] .brand-block > div {
 .settings-close {
   width: 28px;
   height: 28px;
-  font-size: 13px;
 }
 
 .settings-body {
@@ -1015,13 +1024,13 @@ html[dir="rtl"] .provider-settings-heading {
 
 @container (min-width: 760px) {
   .list.is-list.is-minimal .item-top {
-    padding-right: 214px;
+    padding-inline-end: 214px;
   }
 
   .list.is-list.is-minimal .item-actions {
     position: absolute;
     top: 8px;
-    right: 8px;
+    inset-inline-end: 8px;
     z-index: 3;
     margin: 0;
     overflow: visible;
@@ -1114,16 +1123,21 @@ html[dir="rtl"] .provider-settings-heading {
 }
 
 .item-tool {
+  display: inline-grid;
+  place-items: center;
   width: var(--tool-size);
   height: var(--tool-size);
+  padding: 0;
   border-radius: var(--tool-radius);
-  font-size: 1.02em;
-  font-weight: 650;
+  font-size: 0;
+  line-height: 0;
 }
 
-.item-tool[data-role="reload-button"] {
-  font-size: 1.2em;
-  font-weight: 800;
+.item-tool svg,
+.item-tool .action-symbol {
+  width: calc(var(--tool-size) * 0.54);
+  height: calc(var(--tool-size) * 0.54);
+  display: block;
 }
 
 .guide-chip {

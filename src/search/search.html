@@ -43,7 +43,7 @@
                 </span>
                 <span class="settings-accordion-actions">
                   <span class="settings-accordion-state" data-role="global-settings-state"></span>
-                  <span class="settings-accordion-toggle-icon" aria-hidden="true">▾</span>
+                  <span class="settings-accordion-toggle-icon" aria-hidden="true">â–¾</span>
                 </span>
               </button>
               <div class="settings-accordion-header-actions">
@@ -51,48 +51,45 @@
                 <button class="icon-button quick-action-button" type="button" data-action="cycle-theme"></button>
               </div>
             </div>
-            <div class="settings-accordion-summary" data-role="global-settings-summary"></div>
-            <div class="settings-accordion-body" data-role="global-settings-body">
-              <div class="search-settings">
-                <button class="setting-switch-row" type="button" data-action="toggle-grouping" aria-pressed="true">
-                  <span class="switch-label" data-role="grouping-label"></span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
-                <button class="setting-switch-row" type="button" data-action="toggle-dedupe" aria-pressed="false">
-                  <span class="switch-label" data-role="dedupe-label"></span>
-                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
-                </button>
-                <div class="stepper-field">
-                  <span class="stepper-label" data-role="max-results-label"></span>
-                  <div class="stepper-control">
-                    <button class="stepper-button" type="button" data-action="decrease-max-results" aria-label="Decrease">-</button>
-                    <div class="stepper-value" data-role="max-results-value">3</div>
-                    <button class="stepper-button" type="button" data-action="increase-max-results" aria-label="Increase">+</button>
+            <div class="settings-accordion-panel">
+              <div class="settings-accordion-summary" data-role="global-settings-summary"></div>
+              <div class="settings-accordion-body" data-role="global-settings-body">
+                <div class="search-settings">
+                  <button class="setting-switch-row" type="button" data-action="toggle-grouping" aria-pressed="true">
+                    <span class="switch-label" data-role="grouping-label"></span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                  <button class="setting-switch-row" type="button" data-action="toggle-dedupe" aria-pressed="false">
+                    <span class="switch-label" data-role="dedupe-label"></span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                  <div class="stepper-field">
+                    <span class="stepper-label" data-role="max-results-label"></span>
+                    <div class="stepper-control">
+                      <button class="stepper-button" type="button" data-action="decrease-max-results" aria-label="Decrease">-</button>
+                      <div class="stepper-value" data-role="max-results-value">3</div>
+                      <button class="stepper-button" type="button" data-action="increase-max-results" aria-label="Increase">+</button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="settings-accordion settings-accordion--provider" data-role="provider-settings-block">
-            <div class="settings-accordion-header">
-              <button class="settings-accordion-toggle" type="button" data-action="toggle-provider-settings" aria-expanded="false">
-                <span class="settings-accordion-heading">
-                  <span class="settings-accordion-meta">
-                    <span class="settings-accordion-title" data-role="providers-title"></span>
-                    <span class="settings-accordion-caption" data-role="providers-caption"></span>
-                  </span>
+          <div class="settings-accordion settings-accordion--provider is-expanded" data-role="provider-settings-block">
+            <div class="settings-accordion-header settings-accordion-header--static">
+              <div class="settings-accordion-heading">
+                <span class="settings-accordion-meta">
+                  <span class="settings-accordion-title" data-role="providers-title"></span>
+                  <span class="settings-accordion-caption" data-role="providers-caption"></span>
                 </span>
-                <span class="settings-accordion-actions">
-                  <span class="settings-accordion-state" data-role="provider-settings-state"></span>
-                  <span class="settings-accordion-toggle-icon" aria-hidden="true">▾</span>
-                </span>
-              </button>
+              </div>
             </div>
-            <div class="settings-accordion-summary" data-role="provider-summary"></div>
-            <div class="settings-accordion-body" data-role="provider-settings-body">
-              <div class="provider-chip-list" data-role="provider-chips"></div>
-              <p class="search-provider-warning" data-role="provider-warning"></p>
+            <div class="settings-accordion-panel">
+              <div class="settings-accordion-body" data-role="provider-settings-body">
+                <div class="provider-chip-list" data-role="provider-chips"></div>
+                <p class="search-provider-warning" data-role="provider-warning"></p>
+              </div>
             </div>
           </div>
         </section>
@@ -101,6 +98,12 @@
       <section class="content-shell">
         <section class="search-shell">
           <form class="search-card" data-role="search-form">
+            <div class="search-card-header">
+              <div class="search-card-copy">
+                <strong data-role="search-card-title"></strong>
+                <p data-role="search-card-caption"></p>
+              </div>
+            </div>
             <div class="search-input-wrap">
               <span class="search-input-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round">

@@ -14,6 +14,8 @@
   const providerScopeNode = document.querySelector("[data-role='provider-scope']");
   const shortcutHintNode = document.querySelector("[data-role='shortcut-hint']");
   const searchForm = document.querySelector("[data-role='search-form']");
+  const searchCardTitleNode = document.querySelector("[data-role='search-card-title']");
+  const searchCardCaptionNode = document.querySelector("[data-role='search-card-caption']");
   const queryInput = document.querySelector("[data-role='query-input']");
   const searchSubmitButton = document.querySelector("[data-role='search-submit']");
   const providerChipsNode = document.querySelector("[data-role='provider-chips']");
@@ -34,11 +36,8 @@
   const maxResultsLabelNode = document.querySelector("[data-role='max-results-label']");
   const maxResultsValueNode = document.querySelector("[data-role='max-results-value']");
   const providerSettingsBlock = document.querySelector("[data-role='provider-settings-block']");
-  const providerSettingsToggleButton = document.querySelector("[data-action='toggle-provider-settings']");
   const providerSettingsTitleNode = document.querySelector("[data-role='providers-title']");
   const providerSettingsCaptionNode = document.querySelector("[data-role='providers-caption']");
-  const providerSettingsStateNode = document.querySelector("[data-role='provider-settings-state']");
-  const providerSummaryNode = document.querySelector("[data-role='provider-summary']");
   const providerWarningNode = document.querySelector("[data-role='provider-warning']");
   const clearFiltersButton = document.querySelector("[data-role='clear-filters']");
   const decreaseMaxResultsButton = document.querySelector("[data-action='decrease-max-results']");
@@ -303,7 +302,6 @@
     groupByProvider: true,
     dedupeEnabled: false,
     globalSettingsExpanded: true,
-    providerSettingsExpanded: true,
     maxResults: 3,
     sortKey: "rank",
     sortDir: "asc",
@@ -313,6 +311,7 @@
     response: null,
     activeRowKey: null
   };
+  let pendingActiveRowReveal = false;
 
   boot().catch(() => {});
 
@@ -348,13 +347,7 @@
     });
 
     globalSettingsToggleButton.addEventListener("click", () => {
-      state.globalSettingsExpanded = !state.globalSettingsExpanded;
-      render();
-    });
-
-    providerSettingsToggleButton.addEventListener("click", () => {
-      state.providerSettingsExpanded = !state.providerSettingsExpanded;
-      render();
+      toggleAccordion(globalSettingsBlock, "globalSettingsExpanded");
     });
 
     clearFiltersButton.addEventListener("click", () => {
@@ -594,6 +587,7 @@
 
     state.response = response && typeof response === "object" ? response : null;
     ensureActiveRow();
+    pendingActiveRowReveal = Boolean(state.response?.ok);
     state.loading = false;
     render();
   }
@@ -609,6 +603,11 @@
 
     titleNode.textContent = translation.pageTitle;
     subtitleNode.textContent = translation.pageSubtitle;
+    searchCardTitleNode.textContent = state.language === "fa" ? "عبارت جست‌وجو" : "Search Query";
+    searchCardCaptionNode.textContent =
+      state.language === "fa"
+        ? "عبارت اصلی را اینجا وارد کن و بعد فقط در صورت نیاز با فیلترها محدودش کن."
+        : "Start with the main phrase here, then narrow it only when needed.";
     providerScopeNode.textContent = formatString(translation.providerScope, {
       count: String(state.selectedProviders.length)
     });
@@ -630,22 +629,12 @@
     if (providerSettingsCaptionNode) {
       providerSettingsCaptionNode.textContent = translation.providersCaption;
     }
-    if (providerSettingsStateNode) {
-      providerSettingsStateNode.textContent = state.providerSettingsExpanded
-        ? translation.accordionExpanded
-        : translation.accordionCollapsed;
-    }
-    providerSettingsToggleButton.setAttribute("aria-expanded", String(state.providerSettingsExpanded));
-    providerSettingsBlock.classList.toggle("is-expanded", state.providerSettingsExpanded);
+    providerSettingsBlock.classList.add("is-expanded");
     clearFiltersButton.textContent = translation.clearFilters;
     clearFiltersButton.disabled = !hasActiveFilters();
     setTitleAndAria(
       globalSettingsToggleButton,
       state.globalSettingsExpanded ? translation.globalSettingsCollapseHint : translation.globalSettingsExpandHint
-    );
-    setTitleAndAria(
-      providerSettingsToggleButton,
-      state.providerSettingsExpanded ? translation.providersCollapseHint : translation.providersExpandHint
     );
     setTitleAndAria(languageButton, translation.switchLanguageHint);
     setTitleAndAria(
@@ -680,7 +669,6 @@
     heroBodyNode.textContent = translation.heroBody;
     renderGlobalSettingsSummary();
     renderProviderChips();
-    renderProviderSummary();
     renderProviderWarning();
     renderChipEditor("include");
     renderChipEditor("exclude");
@@ -710,14 +698,6 @@
         </button>
       `;
     }).join("");
-  }
-
-  function renderProviderSummary() {
-    providerSummaryNode.innerHTML = state.selectedProviders.length
-      ? state.selectedProviders
-          .map((provider) => `<span class="provider-chip provider-chip--static">${escapeHtml(siteLabelFor(provider, state.language))}</span>`)
-          .join("")
-      : `<span class="provider-chip provider-chip--static provider-chip--empty">${escapeHtml(t().noProvidersTitle)}</span>`;
   }
 
   function renderProviderWarning() {
@@ -819,31 +799,47 @@
 
   function renderSuggestions() {
     const translation = t();
+    const hasQuery = Boolean(String(state.query || "").trim());
     const suggestions = Array.isArray(state.response?.suggestions) ? state.response.suggestions : [];
     const queryMatchesResponse = String(state.response?.query || "").trim() === String(state.query || "").trim();
-    if (!suggestions.length || state.loading || !queryMatchesResponse) {
+    if (state.loading || !hasQuery || !queryMatchesResponse) {
       suggestionsNode.innerHTML = "";
       suggestionsNode.classList.remove("is-visible");
       return;
     }
+    const hasSuccessfulSearch = Boolean(state.response?.ok);
     const includeSuggestions = suggestions.filter((suggestion) => suggestion?.type !== "exclude");
     const excludeSuggestions = suggestions.filter((suggestion) => suggestion?.type === "exclude");
     suggestionsNode.classList.add("is-visible");
     suggestionsNode.innerHTML = `
       <div class="suggestion-strip-head">${escapeHtml(translation.suggestionsTitle)}</div>
+      ${hasSuccessfulSearch ? "" : `<div class="suggestion-strip-note">${escapeHtml(
+        state.language === "fa"
+          ? "بعد از یک جست‌وجوی موفق، پیشنهادهای افزودن و حذف اینجا نمایش داده می‌شوند."
+          : "Include and exclude suggestions appear here after a successful search."
+      )}</div>`}
       <div class="suggestion-groups">
-        ${renderSuggestionGroup("include", includeSuggestions, translation)}
-        ${renderSuggestionGroup("exclude", excludeSuggestions, translation)}
+        ${renderSuggestionGroup("include", includeSuggestions, translation, hasSuccessfulSearch)}
+        ${renderSuggestionGroup("exclude", excludeSuggestions, translation, hasSuccessfulSearch)}
       </div>
     `;
   }
 
-  function renderSuggestionGroup(mode, suggestions, translation) {
-    if (!Array.isArray(suggestions) || !suggestions.length) {
-      return "";
-    }
+  function renderSuggestionGroup(mode, suggestions, translation, hasSuccessfulSearch) {
     const actionLabel = translation[`suggestion_${mode}`] || translation.addChip;
     const label = mode === "exclude" ? translation.excludeTerms : translation.includeTerms;
+    const emptyText =
+      !hasSuccessfulSearch
+        ? state.language === "fa"
+          ? "بعد از دریافت نتیجه، پیشنهادها همین‌جا ظاهر می‌شوند."
+          : "Suggestions will show up here after results are returned."
+        : state.language === "fa"
+          ? mode === "exclude"
+            ? "فعلاً پیشنهاد حذفی پیدا نشد."
+            : "فعلاً پیشنهاد افزودنی پیدا نشد."
+          : mode === "exclude"
+            ? "No exclude suggestions yet."
+            : "No include suggestions yet.";
     return `
       <section class="suggestion-group suggestion-group--${escapeHtml(mode)}">
         <div class="suggestion-group-head">
@@ -851,7 +847,7 @@
           <strong>${escapeHtml(label)}</strong>
         </div>
         <div class="suggestion-chip-list">
-          ${suggestions.map((suggestion) => {
+          ${Array.isArray(suggestions) && suggestions.length ? suggestions.map((suggestion) => {
             const reason = translation[`suggestionReason_${suggestion?.reason}`] || "";
             return `
               <button
@@ -865,7 +861,7 @@
                 <span>${escapeHtml(localizeDynamicText(String(suggestion?.label || ""), state.language))}</span>
               </button>
             `;
-          }).join("")}
+          }).join("") : `<span class="suggestion-empty">${escapeHtml(emptyText)}</span>`}
         </div>
       </section>
     `;
@@ -1094,11 +1090,13 @@
     }
 
     const activeRow = resultsBodyNode.querySelector(`[data-row-key="${cssEscape(state.activeRowKey || "")}"]`);
-    if (activeRow) {
+    if (activeRow && pendingActiveRowReveal) {
       activeRow.scrollIntoView({
-        block: "nearest"
+        block: "nearest",
+        inline: "nearest"
       });
     }
+    pendingActiveRowReveal = false;
     hydrateResultThumbnails();
   }
 
@@ -1247,7 +1245,23 @@
 
   function setActiveRow(rowKey) {
     state.activeRowKey = rowKey;
+    pendingActiveRowReveal = true;
     renderResults();
+  }
+
+  function toggleAccordion(blockNode, stateKey) {
+    const anchorBefore = blockNode instanceof HTMLElement ? blockNode.getBoundingClientRect().top : 0;
+    state[stateKey] = !state[stateKey];
+    render();
+    window.requestAnimationFrame(() => {
+      if (!(blockNode instanceof HTMLElement)) {
+        return;
+      }
+      const delta = blockNode.getBoundingClientRect().top - anchorBefore;
+      if (Math.abs(delta) > 1) {
+        window.scrollBy(0, delta);
+      }
+    });
   }
 
   function updateMaxResults(nextValue) {

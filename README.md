@@ -30,22 +30,40 @@ Use this when the extension is not from Chrome Web Store.
 
 ### Logger Setup (Recommended)
 
-One-time auto-start setup:
+macOS one-time auto-start setup:
 
 ```bash
 ./run-rashnu-helper --install-autostart
 ```
 
-Check status:
+macOS status:
 
 ```bash
 ./run-rashnu-helper --status
 ```
 
-Foreground/manual mode:
+macOS foreground/manual mode:
 
 ```bash
 ./run-rashnu-helper
+```
+
+Windows one-time auto-start setup:
+
+```powershell
+.\run-rashnu-helper.ps1 -InstallAutostart
+```
+
+Windows status:
+
+```powershell
+.\run-rashnu-helper.ps1 -Status
+```
+
+Windows foreground/manual mode:
+
+```powershell
+.\run-rashnu-helper.ps1
 ```
 
 After setup, open Digikala, Torob, Technolife, Emalls, Amazon, or eBay pages and use the Rashnu side panel.

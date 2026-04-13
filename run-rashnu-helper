@@ -1,17 +1,31 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="/Users/drnoobmaster/development/Works/projects/torob"
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 HELPER_SCRIPT="$ROOT_DIR/scripts/rashnu_log_helper.py"
+ARTIFACT_DIR="$ROOT_DIR/research/artifacts/rashnu"
 LAUNCH_AGENT_ID="com.rashnu.log-helper"
 LAUNCH_AGENT_DIR="$HOME/Library/LaunchAgents"
 LAUNCH_AGENT_PATH="$LAUNCH_AGENT_DIR/$LAUNCH_AGENT_ID.plist"
-ARTIFACT_DIR="$ROOT_DIR/research/artifacts/rashnu"
 STDOUT_PATH="$ARTIFACT_DIR/rashnu-helper-launchd.out.log"
 STDERR_PATH="$ARTIFACT_DIR/rashnu-helper-launchd.err.log"
+UNAME="$(uname -s 2>/dev/null || echo unknown)"
 
 ensure_artifacts() {
   mkdir -p "$ARTIFACT_DIR"
+}
+
+resolve_python() {
+  if command -v python3 >/dev/null 2>&1; then
+    echo python3
+    return 0
+  fi
+  if command -v python >/dev/null 2>&1; then
+    echo python
+    return 0
+  fi
+  echo "Python 3 was not found on PATH." >&2
+  exit 1
 }
 
 write_launch_agent() {
@@ -26,7 +40,7 @@ write_launch_agent() {
     <string>$LAUNCH_AGENT_ID</string>
     <key>ProgramArguments</key>
     <array>
-      <string>/usr/bin/python3</string>
+      <string>$(resolve_python)</string>
       <string>$HELPER_SCRIPT</string>
     </array>
     <key>WorkingDirectory</key>
@@ -61,10 +75,12 @@ print_status() {
   else
     echo "Rashnu log helper: not running"
   fi
-  if [[ -f "$LAUNCH_AGENT_PATH" ]]; then
-    echo "Autostart: installed ($LAUNCH_AGENT_PATH)"
-  else
-    echo "Autostart: not installed"
+  if [[ "$UNAME" == "Darwin" ]]; then
+    if [[ -f "$LAUNCH_AGENT_PATH" ]]; then
+      echo "Autostart: installed ($LAUNCH_AGENT_PATH)"
+    else
+      echo "Autostart: not installed"
+    fi
   fi
 }
 
@@ -78,21 +94,34 @@ Commands:
   --uninstall-autostart   Remove LaunchAgent autostart
   --status                Show helper and autostart status
   --help                  Show this message
+
+Windows:
+  Use .\\run-rashnu-helper.ps1 instead.
 USAGE
 }
 
 case "${1:-}" in
   "")
     cd "$ROOT_DIR"
-    exec /usr/bin/python3 "$HELPER_SCRIPT"
+    exec "$(resolve_python)" "$HELPER_SCRIPT"
     ;;
   --install-autostart)
+    if [[ "$UNAME" != "Darwin" ]]; then
+      echo "Autostart install from this launcher is only supported on macOS." >&2
+      echo "On Windows use .\\run-rashnu-helper.ps1 -InstallAutostart" >&2
+      exit 1
+    fi
     write_launch_agent
     unload_launch_agent
     load_launch_agent
     echo "Installed and started autostart logger: $LAUNCH_AGENT_ID"
     ;;
   --uninstall-autostart)
+    if [[ "$UNAME" != "Darwin" ]]; then
+      echo "Autostart uninstall from this launcher is only supported on macOS." >&2
+      echo "On Windows use .\\run-rashnu-helper.ps1 -UninstallAutostart" >&2
+      exit 1
+    fi
     unload_launch_agent
     rm -f "$LAUNCH_AGENT_PATH"
     echo "Removed autostart logger: $LAUNCH_AGENT_ID"

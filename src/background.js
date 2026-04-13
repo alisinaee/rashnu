@@ -13,6 +13,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   const LOG_HELPER_BASE_URL = "http://127.0.0.1:45173";
   const LOG_FLUSH_BATCH_SIZE = 20;
   const LOG_STORAGE_FLUSH_DEBOUNCE_MS = 350;
+  const LOG_HELPER_REQUEST_TIMEOUT_MS = 1500;
+  const LOG_HELPER_HEALTH_CACHE_MS = 5000;
+  const LOG_HELPER_OFFLINE_RETRY_MS = 15000;
   const NAVIGATION_RESCAN_DEBOUNCE_MS = 220;
   const TECHNOLIFE_BUILD_ID_TTL_MS = 30 * 60 * 1000;
   const QUERY_TRANSLATION_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
@@ -111,6 +114,12 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   let logPersistTimer = null;
   let logPersistPending = false;
   let stateFlushTimer = null;
+  let logFlushInFlight = false;
+  let stateFlushInFlight = false;
+  let stateFlushQueued = false;
+  let logHelperHealthPromise = null;
+  let lastLogHelperHealthCheckMs = 0;
+  let nextLogHelperRetryAt = 0;
   const navigationRescanDebounceTimers = new Map();
   let stateSnapshotSerial = 0;
   let technolifeBuildIdCache = {
@@ -1886,6 +1895,59 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       });
       if (output.filter((item) => item.type === "include").length >= GLOBAL_SEARCH_INCLUDE_SUGGESTION_LIMIT) {
         break;
+      }
+    }
+
+    const includeCount = output.filter((item) => item.type === "include").length;
+    if (includeCount === 0) {
+      const fallbackInclude = [...includeSuggestions.values()]
+        .sort(
+          (left, right) =>
+            Number(right.foregroundDocs || 0) - Number(left.foregroundDocs || 0) ||
+            Number(right.docCount || 0) - Number(left.docCount || 0) ||
+            Number(right.weight || 0) - Number(left.weight || 0) ||
+            String(left.label).localeCompare(String(right.label))
+        )
+        .slice(0, Math.min(4, GLOBAL_SEARCH_INCLUDE_SUGGESTION_LIMIT));
+      for (const entry of fallbackInclude) {
+        const comparableLabel = globalThis.RashnuNormalize.normalizeText(entry.label);
+        if (!comparableLabel || seenSuggestionKeys.has(`include:${comparableLabel}`)) {
+          continue;
+        }
+        seenSuggestionKeys.add(`include:${comparableLabel}`);
+        output.push({
+          type: "include",
+          label: entry.label,
+          reason: entry.reason
+        });
+      }
+    }
+
+    const excludeCount = output.filter((item) => item.type === "exclude").length;
+    if (excludeCount === 0) {
+      const fallbackExclude = [
+        ...[...excludeKeywordSuggestions.values()],
+        ...[...excludeSuggestions.values()]
+      ]
+        .sort(
+          (left, right) =>
+            Number(right.tailDocs || 0) - Number(left.tailDocs || 0) ||
+            Number(right.docCount || 0) - Number(left.docCount || 0) ||
+            Number(right.weight || 0) - Number(left.weight || 0) ||
+            String(left.label).localeCompare(String(right.label))
+        )
+        .slice(0, Math.min(3, GLOBAL_SEARCH_EXCLUDE_SUGGESTION_LIMIT));
+      for (const entry of fallbackExclude) {
+        const comparableLabel = globalThis.RashnuNormalize.normalizeText(entry.label);
+        if (!comparableLabel || seenSuggestionKeys.has(`exclude:${comparableLabel}`)) {
+          continue;
+        }
+        seenSuggestionKeys.add(`exclude:${comparableLabel}`);
+        output.push({
+          type: "exclude",
+          label: entry.label,
+          reason: entry.reason
+        });
       }
     }
 
@@ -3948,9 +4010,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     };
   }
 
-  async function fetchText(url, options) {
+  async function fetchResponse(url, options, timeoutMs = REQUEST_TIMEOUT_MS) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     const requestOptions =
       options && typeof options === "object"
         ? {
@@ -3963,12 +4025,10 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
 
     try {
       const response = await fetch(url, requestOptions);
-
       if (!response.ok) {
         throw new Error(`http_${response.status}`);
       }
-
-      return await response.text();
+      return response;
     } catch (error) {
       if (error.name === "AbortError") {
         throw new Error("timeout");
@@ -3982,38 +4042,21 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
   }
 
-  async function fetchJson(url, options) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-    const requestOptions =
-      options && typeof options === "object"
-        ? {
-            ...options,
-            signal: controller.signal
-          }
-        : {
-            signal: controller.signal
-          };
+  async function fetchText(url, options, timeoutMs = REQUEST_TIMEOUT_MS) {
+    const response = await fetchResponse(url, options, timeoutMs);
+    return await response.text();
+  }
 
-    try {
-      const response = await fetch(url, requestOptions);
+  async function fetchJson(url, options, timeoutMs = REQUEST_TIMEOUT_MS) {
+    const response = await fetchResponse(url, options, timeoutMs);
+    return await response.json();
+  }
 
-      if (!response.ok) {
-        throw new Error(`http_${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (error.name === "AbortError") {
-        throw new Error("timeout");
-      }
-      if (error instanceof TypeError) {
-        throw new Error("network_error");
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeoutId);
+  function describeFetchError(error, fallbackMessage) {
+    if (typeof error?.message === "string" && error.message) {
+      return error.message;
     }
+    return fallbackMessage;
   }
 
   async function getPanelState() {
@@ -4493,46 +4536,75 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }, 500);
   }
 
-  async function ensureLogHelperHealth() {
-    try {
-      const response = await fetch(`${LOG_HELPER_BASE_URL}/health`);
-      if (!response.ok) {
-        throw new Error(`http_${response.status}`);
+  async function ensureLogHelperHealth(options = {}) {
+    const force = Boolean(options.force);
+    const now = Date.now();
+
+    if (!force) {
+      if (logHelperHealthPromise) {
+        return logHelperHealthPromise;
       }
-      const payload = await response.json();
-      logHelperStatus = {
-        connected: true,
-        lastCheckedAt: new Date().toISOString(),
-        lastError: null,
-        artifactDir: payload.artifact_dir || "research/artifacts/rashnu",
-        logPath: payload.log_path || "research/artifacts/rashnu/rashnu-live-log.ndjson",
-        statePath: payload.state_path || "research/artifacts/rashnu/rashnu-state.json"
-      };
-      return true;
-    } catch (error) {
-      logHelperStatus = {
-        ...logHelperStatus,
-        connected: false,
-        lastCheckedAt: new Date().toISOString(),
-        lastError: error?.message || "helper_unreachable"
-      };
-      return false;
+      if (logHelperStatus.connected && now - lastLogHelperHealthCheckMs < LOG_HELPER_HEALTH_CACHE_MS) {
+        return true;
+      }
+      if (!logHelperStatus.connected && now < nextLogHelperRetryAt) {
+        return false;
+      }
     }
+
+    if (logHelperHealthPromise) {
+      return logHelperHealthPromise;
+    }
+
+    logHelperHealthPromise = (async () => {
+      try {
+        const payload = await fetchJson(`${LOG_HELPER_BASE_URL}/health`, null, LOG_HELPER_REQUEST_TIMEOUT_MS);
+        lastLogHelperHealthCheckMs = Date.now();
+        nextLogHelperRetryAt = 0;
+        logHelperStatus = {
+          connected: true,
+          lastCheckedAt: new Date(lastLogHelperHealthCheckMs).toISOString(),
+          lastError: null,
+          artifactDir: payload.artifact_dir || "research/artifacts/rashnu",
+          logPath: payload.log_path || "research/artifacts/rashnu/rashnu-live-log.ndjson",
+          statePath: payload.state_path || "research/artifacts/rashnu/rashnu-state.json"
+        };
+        return true;
+      } catch (error) {
+        lastLogHelperHealthCheckMs = Date.now();
+        nextLogHelperRetryAt = lastLogHelperHealthCheckMs + LOG_HELPER_OFFLINE_RETRY_MS;
+        logHelperStatus = {
+          ...logHelperStatus,
+          connected: false,
+          lastCheckedAt: new Date(lastLogHelperHealthCheckMs).toISOString(),
+          lastError: describeFetchError(error, "helper_unreachable")
+        };
+        return false;
+      } finally {
+        logHelperHealthPromise = null;
+      }
+    })();
+
+    return logHelperHealthPromise;
   }
 
   async function flushLogsToHelper() {
     if (!pendingLogEntries.length) {
       return;
     }
-    const batch = pendingLogEntries.splice(0, LOG_FLUSH_BATCH_SIZE);
-    const healthy = await ensureLogHelperHealth();
-    if (!healthy) {
-      pendingLogEntries.unshift(...batch);
+    if (logFlushInFlight) {
       return;
     }
+    logFlushInFlight = true;
+    const batch = pendingLogEntries.splice(0, LOG_FLUSH_BATCH_SIZE);
 
     try {
-      const response = await fetch(`${LOG_HELPER_BASE_URL}/append-log`, {
+      const healthy = await ensureLogHelperHealth();
+      if (!healthy) {
+        pendingLogEntries.unshift(...batch);
+        return;
+      }
+      await fetchResponse(`${LOG_HELPER_BASE_URL}/append-log`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -4540,46 +4612,59 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         body: JSON.stringify({
           entries: batch
         })
-      });
-      if (!response.ok) {
-        throw new Error(`http_${response.status}`);
-      }
+      }, LOG_HELPER_REQUEST_TIMEOUT_MS);
     } catch (error) {
+      nextLogHelperRetryAt = Date.now() + LOG_HELPER_OFFLINE_RETRY_MS;
       logHelperStatus = {
         ...logHelperStatus,
         connected: false,
         lastCheckedAt: new Date().toISOString(),
-        lastError: error?.message || "log_flush_failed"
+        lastError: describeFetchError(error, "log_flush_failed")
       };
       pendingLogEntries.unshift(...batch);
+    } finally {
+      logFlushInFlight = false;
+      if (pendingLogEntries.length) {
+        scheduleLogFlush();
+      }
     }
   }
 
   async function flushStateToHelper() {
-    const healthy = await ensureLogHelperHealth();
-    if (!healthy) {
+    if (stateFlushInFlight) {
+      stateFlushQueued = true;
       return;
     }
+    stateFlushInFlight = true;
+    stateFlushQueued = false;
 
     try {
+      const healthy = await ensureLogHelperHealth();
+      if (!healthy) {
+        return;
+      }
       const payload = await buildHelperStatePayload();
-      const response = await fetch(`${LOG_HELPER_BASE_URL}/write-state`, {
+      await fetchResponse(`${LOG_HELPER_BASE_URL}/write-state`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify(payload)
-      });
-      if (!response.ok) {
-        throw new Error(`http_${response.status}`);
-      }
+      }, LOG_HELPER_REQUEST_TIMEOUT_MS);
     } catch (error) {
+      nextLogHelperRetryAt = Date.now() + LOG_HELPER_OFFLINE_RETRY_MS;
       logHelperStatus = {
         ...logHelperStatus,
         connected: false,
         lastCheckedAt: new Date().toISOString(),
-        lastError: error?.message || "state_flush_failed"
+        lastError: describeFetchError(error, "state_flush_failed")
       };
+    } finally {
+      stateFlushInFlight = false;
+      if (stateFlushQueued) {
+        stateFlushQueued = false;
+        scheduleStateFlush();
+      }
     }
   }
 

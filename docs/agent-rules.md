@@ -20,8 +20,48 @@
 - Ensure top reload should work without refreshing the page.
 - Ensure changing lang should not require refreshing.
 - Ensure in RTL the per-item corner tools (reload/find) should be on the left side to avoid overlap with title/status content.
+- Ensure logger helper failures or disconnects must not freeze the panel, reload actions, or ongoing site matching.
+- Provide working local-log helper commands for both macOS and Windows.
+- Ensure small-screen settings areas remain scrollable instead of clipping content off-screen.
+- Keep global-search section summaries visually inside the same rounded card as their section header/body.
+- Align global-search section titles/captions by document direction; LTR must left-align and RTL must right-align.
+- Keep global-search accordions as one unified rounded section, not separate bordered header/body boxes.
+- Keep global-search settings cards visually single-piece; do not reintroduce divider-heavy split header/body styling.
+- Keep global-search wide-screen layout compact and minimal instead of wasting horizontal space.
+- Keep include/exclude suggestion areas visible after search attempts so users understand when suggestions are unavailable.
+- Keep the global-search providers section always expanded; do not add a collapse control there.
 
 ## Recent Changes (Last 20)
+### 2026-04-13T12:02:00+03:30
+- Changed files: `src/search/search.html`, `src/search/search.css`, `src/search/search.js`
+- Summary: Removed the global-search providers accordion toggle/state UI, kept the providers section permanently expanded, and simplified the card header/body structure to match the always-open behavior.
+- Behavior impact: Added or refreshed 1 behavior rule(s) from user instructions.
+<!-- fingerprint:0fc30d4e98ec -->
+
+### 2026-04-13T11:49:00+03:30
+- Changed files: `src/search/search.css`, `src/search/search.js`
+- Summary: Removed the remaining internal split treatment from global-search settings cards, enforced full-width logical title alignment for LTR/RTL, tightened wide-screen search/settings density, and kept suggestion groups visible with explicit empty-state messaging after search attempts.
+- Behavior impact: Added or refreshed 3 behavior rule(s) from user instructions.
+<!-- fingerprint:5b2d930dc466 -->
+
+### 2026-04-13T11:34:00+03:30
+- Changed files: `src/search/search.css`, `src/search/search.js`, `src/search/search.html`
+- Summary: Converted global-search accordions into single unified cards, fixed direction-aware section-title alignment, made wide-screen settings more compact with a two-column top layout, emphasized the main search field with clearer copy, and kept the suggestion strip visible with empty-state hints when include/exclude suggestions are unavailable.
+- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
+<!-- fingerprint:08cba4c83e91 -->
+
+### 2026-04-13T11:18:00+03:30
+- Changed files: `src/search/search.html`, `src/search/search.css`, `src/search/search.js`, `src/panel/panel.css`
+- Summary: Reworked global-search section cards so summaries/body live inside the same rounded container, made provider pills consistently rounded/aligned, added a clearer search-query heading, stabilized accordion toggles so they preserve viewport position, and fixed panel minimal-view RTL action positioning plus scrollable settings on small screens.
+- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
+<!-- fingerprint:b8057d6bf7a1 -->
+
+### 2026-04-13T10:45:00+03:30
+- Changed files: `src/background.js`, `src/panel/panel.js`, `src/panel/panel.css`, `run-rashnu-helper`, `run-rashnu-helper.ps1`, `README.md`
+- Summary: Hardened panel/background recovery so worker restarts and offline local logging cannot dead-end the UI, replaced toolbar/item glyph buttons with centered SVG icons for consistent Windows rendering, and added path-relative macOS plus Windows helper launchers/instructions for local logs.
+- Behavior impact: Added or refreshed 2 behavior rule(s) from user instructions.
+<!-- fingerprint:5fcb0e7e2b7d -->
+
 ### 2026-04-12T22:19:48+03:30
 - Changed files: `src/panel/panel.js`, `src/background.js`, `src/search/search.js`, `src/help/help.html`, `src/help/help.js`
 - Summary: Added a per-item Rashnu Search action in the panel that opens global search prefilled and autorun for the clicked item title, and refreshed the help guide to cover global-search filters, duplicate grouping, thumbnails, and the new item action.
@@ -143,4 +183,4 @@
 <!-- fingerprint:b84dc5c35bc4 -->
 
 ## Last Updated
-- 2026-04-12T22:19:48+03:30
+- 2026-04-13T12:02:00+03:30

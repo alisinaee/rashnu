@@ -403,7 +403,7 @@
   function bindEvents() {
     reloadAllButton.addEventListener("click", async () => {
       forceRebuild();
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_RELOAD_ALL"
       });
       logger.info("panel", "reload_all_clicked");
@@ -412,7 +412,7 @@
     });
 
     toggleSettingsButton.addEventListener("click", async () => {
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_SET_SETTINGS_OPEN",
         payload: { enabled: !Boolean(currentState?.settingsOpen) }
       });
@@ -426,7 +426,7 @@
     });
 
     openSearchButton.addEventListener("click", async () => {
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_OPEN_GLOBAL_SEARCH_TAB",
         payload: {}
       });
@@ -436,7 +436,7 @@
       const order = ["system", "dark", "light"];
       const current = order.includes(currentState?.themeMode) ? currentState.themeMode : "system";
       const next = order[(order.indexOf(current) + 1) % order.length];
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_SET_THEME_MODE",
         payload: { themeMode: next }
       });
@@ -444,7 +444,7 @@
     });
 
     closeSettingsButton.addEventListener("click", async () => {
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_SET_SETTINGS_OPEN",
         payload: { enabled: false }
       });
@@ -453,7 +453,7 @@
 
     selectionButton.addEventListener("click", async () => {
       const enabled = !Boolean(currentState?.selectionModeEnabled);
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_SET_SELECTION_MODE",
         payload: { enabled }
       });
@@ -462,7 +462,7 @@
 
     syncPageViewButton.addEventListener("click", async () => {
       const enabled = !Boolean(currentState?.syncPageViewEnabled);
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_SET_SYNC_PAGE_VIEW",
         payload: { enabled }
       });
@@ -471,7 +471,7 @@
 
     minimalViewButton.addEventListener("click", async () => {
       const enabled = !Boolean(currentState?.minimalViewEnabled);
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_SET_MINIMAL_VIEW",
         payload: { enabled }
       });
@@ -481,7 +481,7 @@
 
     debugButton.addEventListener("click", async () => {
       const enabled = !Boolean(currentState?.debugEnabled);
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_SET_DEBUG",
         payload: { enabled }
       });
@@ -493,7 +493,7 @@
         return;
       }
       const enabled = !Boolean(currentState?.autoLogsEnabled);
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_SET_AUTO_LOGS",
         payload: { enabled }
       });
@@ -502,7 +502,7 @@
 
     guideNumbersButton.addEventListener("click", async () => {
       const enabled = !Boolean(currentState?.guideNumbersEnabled);
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_SET_GUIDE_NUMBERS",
         payload: { enabled }
       });
@@ -522,7 +522,7 @@
       button.addEventListener("click", async () => {
         const provider = String(button.getAttribute("data-provider") || "");
         const enabled = !isProviderSearchEnabled(currentState, provider);
-        await chrome.runtime.sendMessage({
+        await sendRuntimeMessage({
           type: "RASHNU_SET_PROVIDER_SEARCH",
           payload: { provider, enabled }
         });
@@ -534,7 +534,7 @@
       button.addEventListener("click", async () => {
         const provider = String(button.getAttribute("data-provider") || "");
         const enabled = !isProviderPriceVisible(currentState, provider);
-        await chrome.runtime.sendMessage({
+        await sendRuntimeMessage({
           type: "RASHNU_SET_PROVIDER_PRICE",
           payload: { provider, enabled }
         });
@@ -543,7 +543,7 @@
     }
 
     layoutListButton.addEventListener("click", async () => {
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_SET_LAYOUT_MODE",
         payload: { layoutMode: "list" }
       });
@@ -552,7 +552,7 @@
     });
 
     layoutGridButton.addEventListener("click", async () => {
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_SET_LAYOUT_MODE",
         payload: { layoutMode: "grid" }
       });
@@ -562,7 +562,7 @@
 
     languageButton.addEventListener("click", async () => {
       const language = currentState?.language === "en" ? "fa" : "en";
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_SET_LANGUAGE",
         payload: { language }
       });
@@ -571,7 +571,7 @@
     });
 
     fontDownButton.addEventListener("click", async () => {
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_ADJUST_FONT_SCALE",
         payload: { delta: -1 }
       });
@@ -580,7 +580,7 @@
     });
 
     fontUpButton.addEventListener("click", async () => {
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_ADJUST_FONT_SCALE",
         payload: { delta: 1 }
       });
@@ -589,7 +589,7 @@
     });
 
     clearLogsButton.addEventListener("click", async () => {
-      await chrome.runtime.sendMessage({
+      await sendRuntimeMessage({
         type: "RASHNU_CLEAR_LOGS"
       });
       await refreshState();
@@ -597,7 +597,7 @@
 
     if (exportLogsButton) {
       exportLogsButton.addEventListener("click", async () => {
-        await chrome.runtime.sendMessage({
+        await sendRuntimeMessage({
           type: "RASHNU_EXPORT_LOGS"
         });
         await refreshState();
@@ -612,7 +612,7 @@
 
       if (button.getAttribute("data-item-action") === "reload-item") {
         const sourceId = button.getAttribute("data-source-id");
-        await chrome.runtime.sendMessage({
+        await sendRuntimeMessage({
           type: "RASHNU_RELOAD_ITEM",
           payload: { sourceId }
         });
@@ -622,7 +622,7 @@
 
       if (button.getAttribute("data-item-action") === "locate-item") {
         const sourceId = button.getAttribute("data-source-id");
-        await chrome.runtime.sendMessage({
+        await sendRuntimeMessage({
           type: "RASHNU_LOCATE_ITEM",
           payload: { sourceId }
         });
@@ -634,7 +634,7 @@
         if (!query) {
           return;
         }
-        await chrome.runtime.sendMessage({
+        await sendRuntimeMessage({
           type: "RASHNU_OPEN_GLOBAL_SEARCH_TAB",
           payload: { query }
         });
@@ -659,10 +659,29 @@
 
   async function refreshState() {
     const scrollTop = itemsList.scrollTop;
-    currentState = await chrome.runtime.sendMessage({
-      type: "RASHNU_PANEL_GET_STATE"
-    });
+    try {
+      currentState = await sendRuntimeMessage(
+        {
+          type: "RASHNU_PANEL_GET_STATE"
+        },
+        {
+          attempts: 3,
+          retryDelayMs: 180,
+          suppressErrors: false
+        }
+      );
+    } catch (error) {
+      logger.warn("panel", "state_refresh_failed", {
+        error
+      });
+      const language = currentState?.language === "en" ? "en" : "fa";
+      summaryText.textContent =
+        language === "en" ? "Rashnu is reconnecting to the extension..." : "رشنو در حال اتصال دوباره به افزونه است...";
+      scheduleSoftRefresh(700);
+      return;
+    }
     const rerenderedList = render(currentState);
+    hydrateDynamicIcons();
     if (rerenderedList === "rebuild") {
       itemsList.scrollTop = scrollTop;
       bindImageStates();
@@ -671,6 +690,48 @@
     }
     syncPanelToPageView(currentState);
     renderLogHelperStatus(currentState);
+  }
+
+  async function sendRuntimeMessage(message, options = {}) {
+    const attempts = Math.max(1, Number(options.attempts) || 2);
+    const retryDelayMs = Number.isFinite(options.retryDelayMs) ? options.retryDelayMs : 150;
+    const suppressErrors = options.suppressErrors !== false;
+    let lastError = null;
+
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      try {
+        return await chrome.runtime.sendMessage(message);
+      } catch (error) {
+        lastError = error;
+        if (attempt + 1 < attempts) {
+          await wait(retryDelayMs);
+        }
+      }
+    }
+
+    logger.warn("panel", "runtime_message_failed", {
+      type: message?.type || "unknown",
+      error: lastError
+    });
+    if (suppressErrors) {
+      return Object.prototype.hasOwnProperty.call(options, "fallbackValue") ? options.fallbackValue : null;
+    }
+    throw lastError || new Error("runtime_message_failed");
+  }
+
+  function wait(durationMs) {
+    return new Promise((resolve) => {
+      window.setTimeout(resolve, durationMs);
+    });
+  }
+
+  function hydrateDynamicIcons() {
+    itemsList.querySelectorAll('[data-role="reload-button"]').forEach((button) => {
+      button.innerHTML = buildReloadIconMarkup();
+    });
+    itemsList.querySelectorAll('[data-role="locate-button"]').forEach((button) => {
+      button.innerHTML = buildLocateIconMarkup();
+    });
   }
 
   function render(state) {
@@ -693,6 +754,11 @@
     document.body.style.setProperty("--tool-radius", `${clamp(10 + fontScale, 8, 14)}px`);
 
     settingsTitle.textContent = translation.settingsTitle;
+    reloadAllButton.innerHTML = buildReloadIconMarkup();
+    toggleSettingsButton.innerHTML = buildSettingsIconMarkup();
+    openSearchButton.innerHTML = buildSearchIconMarkup();
+    helpButton.innerHTML = buildHelpIconMarkup();
+    closeSettingsButton.innerHTML = buildCloseIconMarkup();
     setTitleAndAria(reloadAllButton, translation.reloadAllHint);
     setTitleAndAria(
       toggleSettingsButton,
@@ -706,7 +772,7 @@
     setTitleAndAria(languageButton, translation.switchLanguageHint);
     const nextThemeMode = state?.themeMode || "system";
     const themeModeLabel = translation[`theme_${nextThemeMode}`] || translation.theme_system;
-    themeButton.textContent = themeIconFor(nextThemeMode);
+    themeButton.innerHTML = buildThemeIconMarkup(nextThemeMode);
     setTitleAndAria(themeButton, `${translation.cycleThemeHint} (${translation.theme}: ${themeModeLabel})`);
     switchLabels.selection.textContent = translation.elementSelect;
     switchLabels.syncPageView.textContent = translation.syncPageView;
@@ -847,7 +913,7 @@
     helperStatusText.classList.toggle("is-offline", !helper.connected);
     logPathText.textContent = helper.connected
       ? t(language, "logPathReady", { path: helper.logPath || "research/artifacts/rashnu/rashnu-live-log.ndjson" })
-      : TRANSLATIONS[language].logPathDisconnected;
+      : buildLogHelperDisconnectedHint(language);
   }
 
   function setDebugInfoVisibility(enabled) {
@@ -1082,8 +1148,8 @@
         ${
           showCornerTools
             ? `<div class="item-tools">
-          <button class="icon-button item-tool" data-item-action="reload-item" data-role="reload-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAllHint)}" aria-label="${escapeHtml(translation.reloadAllHint)}">${escapeHtml(t(language, "reloadItem"))}</button>
-          <button class="icon-button item-tool" data-item-action="locate-item" data-role="locate-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItemHint)}" aria-label="${escapeHtml(translation.locateItemHint)}">◎</button>
+          <button class="icon-button item-tool" data-item-action="reload-item" data-role="reload-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.reloadAllHint)}" aria-label="${escapeHtml(translation.reloadAllHint)}">${buildReloadIconMarkup()}</button>
+          <button class="icon-button item-tool" data-item-action="locate-item" data-role="locate-button" data-source-id="${escapeHtml(item.sourceId)}" title="${escapeHtml(translation.locateItemHint)}" aria-label="${escapeHtml(translation.locateItemHint)}">${buildLocateIconMarkup()}</button>
         </div>`
             : ""
         }
@@ -1443,6 +1509,44 @@
 
   function buildReloadIconMarkup() {
     return `<svg class="action-symbol action-symbol--reload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>`;
+  }
+
+  function buildSettingsIconMarkup() {
+    return `<svg class="icon-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.05.05a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.05-.05a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.08a1.65 1.65 0 0 0-1.08-1.54 1.65 1.65 0 0 0-1.82.33l-.05.05a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.05-.05A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.08a1.65 1.65 0 0 0 1.54-1.08 1.65 1.65 0 0 0-.33-1.82l-.05-.05a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.05.05a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.08a1.65 1.65 0 0 0 1.08 1.54 1.65 1.65 0 0 0 1.82-.33l.05-.05a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.05.05A1.65 1.65 0 0 0 19.4 9c.2.48.67.8 1.2.82H21a2 2 0 0 1 0 4h-.08a1.65 1.65 0 0 0-1.52 1.18z"></path></svg>`;
+  }
+
+  function buildHelpIconMarkup() {
+    return `<svg class="icon-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.1 9a3 3 0 1 1 5.46 1.7c-.73.82-1.56 1.38-2.06 2.1-.27.39-.4.72-.4 1.2"></path><circle cx="12" cy="17.2" r="1"></circle></svg>`;
+  }
+
+  function buildCloseIconMarkup() {
+    return `<svg class="icon-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>`;
+  }
+
+  function buildThemeIconMarkup(mode) {
+    switch (mode) {
+      case "dark":
+        return `<svg class="icon-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.8 8.8 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>`;
+      case "light":
+        return `<svg class="icon-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"></circle><line x1="12" y1="2.5" x2="12" y2="5"></line><line x1="12" y1="19" x2="12" y2="21.5"></line><line x1="2.5" y1="12" x2="5" y2="12"></line><line x1="19" y1="12" x2="21.5" y2="12"></line><line x1="5.2" y1="5.2" x2="7" y2="7"></line><line x1="17" y1="17" x2="18.8" y2="18.8"></line><line x1="17" y1="7" x2="18.8" y2="5.2"></line><line x1="5.2" y1="18.8" x2="7" y2="17"></line></svg>`;
+      default:
+        return `<svg class="icon-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c.8 0 1.57-.1 2.3-.3A8.5 8.5 0 0 1 12 3z"></path><path d="M12 3a9 9 0 0 1 0 18"></path></svg>`;
+    }
+  }
+
+  function buildLogHelperDisconnectedHint(language) {
+    if (isWindowsHost()) {
+      return language === "en"
+        ? "Windows setup: `.\\run-rashnu-helper.ps1 -InstallAutostart` · manual run: `.\\run-rashnu-helper.ps1`"
+        : "برای ویندوز: `.\\run-rashnu-helper.ps1 -InstallAutostart` · اجرای دستی: `.\\run-rashnu-helper.ps1`";
+    }
+    return TRANSLATIONS[language].logPathDisconnected;
+  }
+
+  function isWindowsHost() {
+    const platform =
+      navigator.userAgentData?.platform || navigator.platform || navigator.userAgent || "";
+    return /win/i.test(platform);
   }
 
   function classifyConfidenceTone(confidenceValue) {

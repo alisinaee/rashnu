@@ -2289,9 +2289,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   function clampGlobalSearchResultLimit(value) {
     const parsed = Number.parseInt(value, 10);
     if (!Number.isFinite(parsed)) {
-      return 3;
+      return 10;
     }
-    return Math.max(1, Math.min(10, parsed));
+    return Math.max(1, Math.min(20, parsed));
   }
 
   async function performGlobalSearch(payload) {
@@ -2636,6 +2636,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     const searchUrl = buildSearchUrlForSite("basalam", query);
     let directCandidates = [];
     let proxyCandidates = [];
+    let webFallbackCandidates = [];
     try {
       try {
         const html = await fetchTextWithRetry(searchUrl, {
@@ -2661,9 +2662,24 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         }
       }
 
+      if (!directCandidates.length && !proxyCandidates.length) {
+        try {
+          webFallbackCandidates = await fetchBasalamSearchCandidatesFromWebFallback(query);
+        } catch (fallbackError) {
+          if (!isRecoverableProviderFetchError(fallbackError)) {
+            throw fallbackError;
+          }
+        }
+      }
+
+      const mergedCandidates = mergeBasalamCandidatePools(
+        directCandidates,
+        proxyCandidates,
+        webFallbackCandidates
+      );
       const ranked = globalThis.RashnuMatch.rankCandidates(
         probeItem,
-        (directCandidates.length ? directCandidates : proxyCandidates).slice(0, 18)
+        mergedCandidates.slice(0, 18)
       );
       return buildGlobalSearchProviderResponse("basalam", query, ranked, {
         searchUrl,
@@ -3845,6 +3861,84 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       }
     }
     return Array.from(candidatesByKey.values()).slice(0, 24);
+  }
+
+  async function fetchBasalamSearchCandidatesFromWebFallback(query) {
+    const ddgQuery = globalThis.RashnuNormalize.normalizeWhitespace(`site:basalam.com ${query || ""}`);
+    if (!ddgQuery) {
+      return [];
+    }
+    const url = new URL("https://duckduckgo.com/html/");
+    url.searchParams.set("q", ddgQuery);
+    const html = await fetchTextWithRetry(url.toString(), {
+      headers: {
+        "accept-language": "fa-IR,fa;q=0.9,en;q=0.8"
+      }
+    });
+    return extractBasalamSearchCandidatesFromDuckDuckGoHtml(html).slice(0, 24);
+  }
+
+  function extractBasalamSearchCandidatesFromDuckDuckGoHtml(html) {
+    const text = String(html || "");
+    if (!text) {
+      return [];
+    }
+    const candidatesByKey = new Map();
+    const linkRegex = /<a[^>]*class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+    let match;
+    while ((match = linkRegex.exec(text)) && candidatesByKey.size < 48) {
+      const resolvedUrl = resolveDuckDuckGoResultUrl(match[1] || "");
+      const targetUrl = globalThis.RashnuNormalize.canonicalizeUrl(resolvedUrl, "https://basalam.com");
+      if (!isBasalamSearchTargetUrl(targetUrl)) {
+        continue;
+      }
+      const titleText = sanitizeHtmlText(match[2] || "");
+      const context = text.slice(Math.max(0, match.index), Math.min(text.length, match.index + 1800));
+      const snippetMatch =
+        context.match(/<a[^>]*class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/a>/i) ||
+        context.match(/<div[^>]*class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+      const snippetText = sanitizeHtmlText(snippetMatch?.[1] || "");
+      const title = extractBasalamTitleFromText(titleText, snippetText);
+      if (!title) {
+        continue;
+      }
+      const priceText = extractBasalamPriceText(`${titleText} ${snippetText}`);
+      const candidate = buildBasalamSearchCandidate({
+        title,
+        priceText,
+        targetUrl
+      });
+      upsertBasalamSearchCandidate(candidatesByKey, candidate);
+    }
+    return Array.from(candidatesByKey.values()).slice(0, 24);
+  }
+
+  function resolveDuckDuckGoResultUrl(value) {
+    const raw = decodeHtmlEntities(String(value || "")).trim();
+    if (!raw) {
+      return "";
+    }
+    const normalized = globalThis.RashnuNormalize.canonicalizeUrl(raw, "https://duckduckgo.com");
+    if (!normalized) {
+      return "";
+    }
+    let parsed;
+    try {
+      parsed = new URL(normalized);
+    } catch (_error) {
+      return "";
+    }
+    const redirectTarget = parsed.searchParams.get("uddg");
+    const target = redirectTarget ? decodeURIComponent(redirectTarget) : normalized;
+    return globalThis.RashnuNormalize.canonicalizeUrl(target, "https://basalam.com");
+  }
+
+  function isBasalamSearchTargetUrl(value) {
+    const normalized = globalThis.RashnuNormalize.canonicalizeUrl(value || "", "https://basalam.com");
+    if (!normalized || !/^https?:\/\/(?:www\.)?basalam\.com\//i.test(normalized)) {
+      return false;
+    }
+    return /\/(?:[^/?#]+\/product\/\d+|product\/\d+|p\/[^/?#]+|pgp\/[^/?#]+)/i.test(normalized);
   }
 
   function extractBasalamImageFromMarkdownLabel(label) {

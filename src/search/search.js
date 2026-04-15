@@ -322,7 +322,7 @@
     advancedModeEnabled: false,
     groupByProvider: true,
     dedupeEnabled: false,
-    maxResults: 3,
+    maxResults: 10,
     sortKey: "rank",
     sortDir: "asc",
     loading: false,
@@ -742,7 +742,7 @@
     maxResultsLabelNode.textContent = translation.maxResults;
     maxResultsValueNode.textContent = localizeDynamicText(String(state.maxResults), state.language);
     decreaseMaxResultsButton.disabled = state.maxResults <= 1;
-    increaseMaxResultsButton.disabled = state.maxResults >= 10;
+    increaseMaxResultsButton.disabled = state.maxResults >= 20;
     includeLabelNode.textContent = translation.includeTerms;
     includeHintNode.textContent = translation.includeHint;
     includeInput.placeholder = translation.chipInputPlaceholder;
@@ -1057,7 +1057,7 @@
     state.conditionFilter = "any";
     state.groupByProvider = true;
     state.dedupeEnabled = false;
-    state.maxResults = 3;
+    state.maxResults = 10;
     ensureActiveRow();
     return {
       searchPayloadChanged: previousSignature !== buildSearchSignature(buildSearchPayload()),
@@ -1920,9 +1920,9 @@
   function clampMaxResults(value) {
     const numeric = Number.parseInt(value, 10);
     if (!Number.isFinite(numeric)) {
-      return 3;
+      return 10;
     }
-    return Math.max(1, Math.min(10, numeric));
+    return Math.max(1, Math.min(20, numeric));
   }
 
   function normalizeChipInputValue(value) {

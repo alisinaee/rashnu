@@ -595,7 +595,7 @@
   }
 
   function buildBasalamSearchUrl(query) {
-    const url = new URL("https://basalam.com/search");
+    const url = new URL("https://basalam.com/s");
     url.searchParams.set("q", normalizeWhitespace(valueOrFallback(query)));
     return url.toString();
   }

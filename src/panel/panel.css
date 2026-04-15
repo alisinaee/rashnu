@@ -14,6 +14,24 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Rashnu Persian";
+  src: url("../../assets/fonts/Vazir-Regular-FD.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFF;
+}
+
+@font-face {
+  font-family: "Rashnu Persian";
+  src: url("../../assets/fonts/Vazir-Bold-FD.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFF;
+}
+
 :root {
   color-scheme: dark;
   --bg: #111317;
@@ -74,7 +92,7 @@ body {
   margin: 0;
   background: linear-gradient(180deg, #111317 0%, #0d1014 100%);
   color: var(--text);
-  font-family: "SF Pro Display", "Segoe UI", Tahoma, sans-serif;
+  font-family: "Rashnu Persian", "SF Pro Display", "Segoe UI", Tahoma, sans-serif;
   font-size: var(--panel-font-size);
   overflow: hidden;
   height: 100vh;
@@ -91,19 +109,15 @@ textarea {
   background: linear-gradient(180deg, #edf2f8 0%, #e3eaf4 100%);
 }
 
-html[lang="fa"] body {
-  font-family: "Vazir", "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
-}
-
 html[lang="fa"] .settings-panel,
 html[lang="fa"] .settings-panel * {
-  font-family: "Vazir", "Vazirmatn", Tahoma, "Segoe UI", sans-serif;
+  font-family: "Rashnu Persian", "SF Pro Display", "Segoe UI", Tahoma, sans-serif;
 }
 
 html[lang="en"] .settings-panel,
 html[lang="en"] .summary-card,
 html[lang="en"] .item-card {
-  font-family: "SF Pro Display", "Segoe UI", Tahoma, sans-serif;
+  font-family: "Rashnu Persian", "SF Pro Display", "Segoe UI", Tahoma, sans-serif;
   font-variant-numeric: tabular-nums lining-nums;
 }
 
@@ -446,6 +460,7 @@ html[dir="rtl"] .provider-settings-heading {
 }
 
 .provider-settings-block:not(.is-expanded) .provider-sections,
+.provider-settings-block:not(.is-expanded) .provider-select-field,
 .provider-settings-block:not(.is-expanded) .settings-provider-warning {
   display: none;
 }
@@ -488,6 +503,52 @@ html[dir="rtl"] .provider-settings-heading {
   border-radius: 12px;
   background: var(--panel-soft);
   min-width: 0;
+}
+
+.provider-select-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 172px);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-soft);
+}
+
+.provider-select-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.provider-select-hint {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.provider-select {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(18, 23, 30, 0.92);
+  color: var(--text);
+  font: inherit;
+}
+
+:root[data-theme="light"] .provider-select {
+  background: #fffdf8;
+}
+
+@media (max-width: 960px) {
+  .provider-select-field {
+    grid-template-columns: 1fr;
+  }
 }
 
 .provider-grid {
@@ -1565,6 +1626,28 @@ html[dir="rtl"] .provider-settings-heading {
   word-break: break-word;
 }
 
+.price-value--loading {
+  color: #8ad6ff;
+}
+
+.loading-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.loading-spinner {
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  border: 2px solid rgba(138, 214, 255, 0.26);
+  border-top-color: currentColor;
+  border-right-color: currentColor;
+  animation: rashnu-spin 0.72s linear infinite;
+  flex-shrink: 0;
+}
+
 .price-extra {
   display: flex;
   align-items: center;
@@ -1742,6 +1825,12 @@ html[dir="rtl"] .provider-settings-heading {
 :root[data-theme="light"] .status-chip.error {
   background: rgba(208, 72, 72, 0.1);
   color: #b93939;
+}
+
+@keyframes rashnu-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .debug-box {

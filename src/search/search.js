@@ -1,11 +1,13 @@
 (function () {
   "use strict";
 
-  const ALL_PROVIDER_SITES = ["torob", "digikala", "technolife", "emalls", "amazon", "ebay"];
+  const ALL_PROVIDER_SITES = globalThis.RashnuNormalize.getGlobalSearchProviderSites();
   const STORAGE_KEYS = [
     "rashnuLanguage",
     "rashnuThemeMode",
-    "rashnuProviderSearchEnabled"
+    "rashnuProviderSearchEnabled",
+    "rashnuGlobalSearchAdvancedMode",
+    "rashnuDivarLocation"
   ];
   const root = document.querySelector(".search-page");
   const topStackNode = document.querySelector("[data-role='top-stack']");
@@ -19,16 +21,15 @@
   const queryInput = document.querySelector("[data-role='query-input']");
   const searchSubmitButton = document.querySelector("[data-role='search-submit']");
   const providerChipsNode = document.querySelector("[data-role='provider-chips']");
-  const searchAllButton = document.querySelector("[data-action='run-search']");
   const openAllButton = document.querySelector("[data-action='open-all-searches']");
   const globalSettingsBlock = document.querySelector("[data-role='global-settings-block']");
-  const globalSettingsToggleButton = document.querySelector("[data-action='toggle-global-settings']");
   const globalSettingsTitleNode = document.querySelector("[data-role='global-settings-title']");
   const globalSettingsCaptionNode = document.querySelector("[data-role='global-settings-caption']");
-  const globalSettingsStateNode = document.querySelector("[data-role='global-settings-state']");
   const globalSettingsSummaryNode = document.querySelector("[data-role='global-settings-summary']");
   const languageButton = document.querySelector("[data-action='toggle-language']");
   const themeButton = document.querySelector("[data-action='cycle-theme']");
+  const advancedModeToggleButton = document.querySelector("[data-action='toggle-advanced-mode']");
+  const advancedModeLabelNode = document.querySelector("[data-role='advanced-mode-label']");
   const groupingToggleButton = document.querySelector("[data-action='toggle-grouping']");
   const groupingLabelNode = document.querySelector("[data-role='grouping-label']");
   const dedupeToggleButton = document.querySelector("[data-action='toggle-dedupe']");
@@ -36,9 +37,14 @@
   const maxResultsLabelNode = document.querySelector("[data-role='max-results-label']");
   const maxResultsValueNode = document.querySelector("[data-role='max-results-value']");
   const providerSettingsBlock = document.querySelector("[data-role='provider-settings-block']");
+  const providerSettingsBody = document.querySelector("[data-role='provider-settings-body']");
   const providerSettingsTitleNode = document.querySelector("[data-role='providers-title']");
   const providerSettingsCaptionNode = document.querySelector("[data-role='providers-caption']");
   const providerWarningNode = document.querySelector("[data-role='provider-warning']");
+  const divarLocationLabelNode = document.querySelector("[data-role='divar-location-label']");
+  const divarLocationHintNode = document.querySelector("[data-role='divar-location-hint']");
+  const divarLocationSelect = document.querySelector("[data-role='divar-location-select']");
+  const divarLocationField = divarLocationSelect?.closest(".provider-select-field");
   const clearFiltersButton = document.querySelector("[data-role='clear-filters']");
   const decreaseMaxResultsButton = document.querySelector("[data-action='decrease-max-results']");
   const increaseMaxResultsButton = document.querySelector("[data-action='increase-max-results']");
@@ -79,17 +85,19 @@
       pageTitle: "جست‌وجوی سراسری",
       pageSubtitle: "یک عبارت را در همه‌ی منابع فعال جست‌وجو کن و نتیجه را در یک جدول ببین.",
       providerScope: "{count} منبع فعال",
-      shortcutHint: "میانبرها: Cmd/Ctrl+K، O، S، 1..6",
+      shortcutHint: "میانبرها: Cmd/Ctrl+K، O، S، 1..{maxProviderShortcut}",
       globalSettingsTitle: "تنظیمات Rashnu",
       globalSettingsCaption: "تنظیمات این بخش بالای نوار جست‌وجو می‌ماند.",
-      globalSettingsExpandHint: "باز کردن تنظیمات Rashnu",
-      globalSettingsCollapseHint: "بستن تنظیمات Rashnu",
+      advancedModeLabel: "حالت پیشرفته",
+      advancedModeEnabledHint: "حالت پیشرفته را خاموش کن و به تنظیمات ساده برگرد.",
+      advancedModeDisabledHint: "برای نمایش همه‌ی فیلترها و کنترل‌ها حالت پیشرفته را روشن کن.",
       providersTitle: "منابع",
       providersCaption: "منابع فعال همین تب جست‌وجو را انتخاب کن.",
+      divarLocationLabel: "شهر دیوار",
+      divarLocationHint: "فقط برای جست‌وجوهای دیوار استفاده می‌شود.",
+      divarLocationLoading: "در حال بارگذاری...",
       providersExpandHint: "باز کردن منابع",
       providersCollapseHint: "بستن منابع",
-      accordionExpanded: "بستن",
-      accordionCollapsed: "باز کردن",
       groupByProviders: "گروه‌بندی بر اساس منبع",
       groupDuplicates: "ادغام موارد مشابه",
       maxResults: "حداکثر نتیجه / منبع",
@@ -106,7 +114,7 @@
       addChip: "افزودن",
       removeChip: "حذف",
       conditionLabel: "شرط وضعیت",
-      conditionHint: "روی عنوان‌های نتیجه اعمال می‌شود.",
+      conditionHint: "از عنوان و متادیتای وضعیت نتیجه استفاده می‌کند.",
       condition_any: "همه",
       condition_new_only: "فقط نو",
       condition_used_only: "فقط کارکرده",
@@ -142,6 +150,8 @@
       theme_light: "روشن",
       summaryTheme: "تم {value}",
       summaryLanguage: "زبان {value}",
+      summaryModeSimple: "حالت ساده",
+      summaryModeAdvanced: "حالت پیشرفته",
       summaryMaxResults: "{value} / منبع",
       summaryGroupingOn: "گروهی",
       summaryGroupingOff: "بدون گروه",
@@ -186,17 +196,19 @@
       pageTitle: "Global Search",
       pageSubtitle: "Search one phrase across every enabled provider and review the results in a single table.",
       providerScope: "{count} active providers",
-      shortcutHint: "Shortcuts: Cmd/Ctrl+K, O, S, 1..6",
+      shortcutHint: "Shortcuts: Cmd/Ctrl+K, O, S, 1..{maxProviderShortcut}",
       globalSettingsTitle: "Rashnu Settings",
       globalSettingsCaption: "These controls stay above the search bar while you work.",
-      globalSettingsExpandHint: "Expand Rashnu settings",
-      globalSettingsCollapseHint: "Collapse Rashnu settings",
+      advancedModeLabel: "Advanced Mode",
+      advancedModeEnabledHint: "Turn advanced mode off and go back to the simple setup.",
+      advancedModeDisabledHint: "Turn advanced mode on to reveal all filters and controls.",
       providersTitle: "Providers",
       providersCaption: "Choose the active providers for this search tab.",
+      divarLocationLabel: "Divar City",
+      divarLocationHint: "Used only for Divar searches.",
+      divarLocationLoading: "Loading...",
       providersExpandHint: "Expand providers",
       providersCollapseHint: "Collapse providers",
-      accordionExpanded: "Collapse",
-      accordionCollapsed: "Expand",
       groupByProviders: "Group By Provider",
       groupDuplicates: "Group Duplicates",
       maxResults: "Max Results / Provider",
@@ -213,7 +225,7 @@
       addChip: "Add",
       removeChip: "Remove",
       conditionLabel: "Condition",
-      conditionHint: "Applied from returned titles.",
+      conditionHint: "Uses returned titles and condition metadata.",
       condition_any: "Any",
       condition_new_only: "New only",
       condition_used_only: "Used only",
@@ -249,6 +261,8 @@
       theme_light: "Light",
       summaryTheme: "Theme {value}",
       summaryLanguage: "Language {value}",
+      summaryModeSimple: "Simple Mode",
+      summaryModeAdvanced: "Advanced Mode",
       summaryMaxResults: "{value} / provider",
       summaryGroupingOn: "Grouped",
       summaryGroupingOff: "Flat",
@@ -299,9 +313,15 @@
     excludeTerms: [],
     conditionFilter: "any",
     selectedProviders: [],
+    divarLocation: {
+      id: 1,
+      slug: "tehran",
+      name: "تهران"
+    },
+    divarLocationOptions: [],
+    advancedModeEnabled: false,
     groupByProvider: true,
     dedupeEnabled: false,
-    globalSettingsExpanded: true,
     maxResults: 3,
     sortKey: "rank",
     sortDir: "asc",
@@ -317,6 +337,7 @@
 
   async function boot() {
     await loadSettings();
+    await loadDivarLocations();
     hydrateInitialQueryFromUrl();
     await notifyGlobalSearchTabOpened();
     bindEvents();
@@ -338,16 +359,39 @@
     state.language = stored.rashnuLanguage === "en" ? "en" : "fa";
     state.themeMode = ["system", "dark", "light"].includes(stored.rashnuThemeMode) ? stored.rashnuThemeMode : "system";
     state.selectedProviders = getEnabledProvidersFromFlags(stored.rashnuProviderSearchEnabled);
+    state.advancedModeEnabled = Boolean(stored.rashnuGlobalSearchAdvancedMode);
+    if (stored.rashnuDivarLocation && typeof stored.rashnuDivarLocation === "object") {
+      state.divarLocation = {
+        id: Number(stored.rashnuDivarLocation.id) || 1,
+        slug: String(stored.rashnuDivarLocation.slug || "tehran"),
+        name: String(stored.rashnuDivarLocation.name || "تهران")
+      };
+    }
+  }
+
+  async function loadDivarLocations() {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: "RASHNU_GET_DIVAR_LOCATIONS"
+      });
+      if (!response?.ok) {
+        return;
+      }
+      if (response.location && typeof response.location === "object") {
+        state.divarLocation = {
+          id: Number(response.location.id) || 1,
+          slug: String(response.location.slug || "tehran"),
+          name: String(response.location.name || "تهران")
+        };
+      }
+      state.divarLocationOptions = Array.isArray(response.options) ? response.options : [];
+    } catch (_error) {}
   }
 
   function bindEvents() {
     searchForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       await runSearch();
-    });
-
-    globalSettingsToggleButton.addEventListener("click", () => {
-      toggleAccordion(globalSettingsBlock, "globalSettingsExpanded");
     });
 
     clearFiltersButton.addEventListener("click", () => {
@@ -362,10 +406,15 @@
       cycleThemeMode().catch(() => {});
     });
 
+    advancedModeToggleButton.addEventListener("click", () => {
+      setAdvancedMode(!state.advancedModeEnabled).catch(() => {});
+    });
+
     queryInput.addEventListener("input", () => {
       state.query = queryInput.value;
       renderStatus();
       renderQueryPreview();
+      renderSuggestions();
     });
 
     includeInput.addEventListener("keydown", (event) => {
@@ -428,6 +477,20 @@
         state.selectedProviders = [...state.selectedProviders, provider];
       }
       ensureActiveRow();
+      render();
+    });
+
+    divarLocationSelect?.addEventListener("change", async () => {
+      const nextLocation = getSelectedDivarLocation(divarLocationSelect.value);
+      if (!nextLocation) {
+        return;
+      }
+      state.divarLocation = nextLocation;
+      await chrome.runtime.sendMessage({
+        type: "RASHNU_SET_DIVAR_LOCATION",
+        payload: { location: nextLocation }
+      });
+      rerunSearchIfNeeded();
       render();
     });
 
@@ -531,6 +594,23 @@
           ? changes.rashnuThemeMode.newValue
           : "system";
       }
+      if (Object.prototype.hasOwnProperty.call(changes, "rashnuGlobalSearchAdvancedMode")) {
+        state.advancedModeEnabled = Boolean(changes.rashnuGlobalSearchAdvancedMode.newValue);
+        if (!state.advancedModeEnabled) {
+          applySimpleModeDefaults();
+        }
+      }
+      if (Object.prototype.hasOwnProperty.call(changes, "rashnuDivarLocation")) {
+        const nextLocation = changes.rashnuDivarLocation.newValue;
+        if (nextLocation && typeof nextLocation === "object") {
+          state.divarLocation = {
+            id: Number(nextLocation.id) || 1,
+            slug: String(nextLocation.slug || "tehran"),
+            name: String(nextLocation.name || "تهران")
+          };
+        }
+        rerunSearchIfNeeded();
+      }
       render();
     });
   }
@@ -596,6 +676,7 @@
     const translation = t();
     const hasSearchState = state.loading || Boolean(state.response) || !state.selectedProviders.length;
     root.dataset.mode = hasSearchState ? "results" : "empty";
+    root.dataset.advancedMode = state.advancedModeEnabled ? "advanced" : "simple";
     document.documentElement.lang = state.language;
     document.documentElement.dir = state.language === "fa" ? "rtl" : "ltr";
     document.documentElement.dataset.theme = getEffectiveTheme(state.themeMode);
@@ -606,45 +687,52 @@
     searchCardTitleNode.textContent = state.language === "fa" ? "عبارت جست‌وجو" : "Search Query";
     searchCardCaptionNode.textContent =
       state.language === "fa"
-        ? "عبارت اصلی را اینجا وارد کن و بعد فقط در صورت نیاز با فیلترها محدودش کن."
-        : "Start with the main phrase here, then narrow it only when needed.";
+        ? state.advancedModeEnabled
+          ? "عبارت اصلی را اینجا وارد کن و بعد فقط در صورت نیاز با فیلترها محدودش کن."
+          : "عبارت اصلی را وارد کن و مستقیم جست‌وجو بزن. برای فیلترها حالت پیشرفته را روشن کن."
+        : state.advancedModeEnabled
+          ? "Start with the main phrase here, then narrow it only when needed."
+          : "Enter the main phrase and search directly. Turn on Advanced Mode only when you need extra controls.";
     providerScopeNode.textContent = formatString(translation.providerScope, {
       count: String(state.selectedProviders.length)
     });
-    shortcutHintNode.textContent = translation.shortcutHint;
+    shortcutHintNode.textContent = formatString(translation.shortcutHint, {
+      maxProviderShortcut: String(Math.min(9, ALL_PROVIDER_SITES.length))
+    });
     globalSettingsTitleNode.textContent = translation.globalSettingsTitle;
     if (globalSettingsCaptionNode) {
       globalSettingsCaptionNode.textContent = translation.globalSettingsCaption;
     }
-    if (globalSettingsStateNode) {
-      globalSettingsStateNode.textContent = state.globalSettingsExpanded
-        ? translation.accordionExpanded
-        : translation.accordionCollapsed;
-    }
     languageButton.textContent = "A";
     themeButton.textContent = themeIconFor(state.themeMode);
-    globalSettingsToggleButton.setAttribute("aria-expanded", String(state.globalSettingsExpanded));
-    globalSettingsBlock.classList.toggle("is-expanded", state.globalSettingsExpanded);
+    globalSettingsBlock.classList.add("is-expanded");
     providerSettingsTitleNode.textContent = translation.providersTitle;
     if (providerSettingsCaptionNode) {
       providerSettingsCaptionNode.textContent = translation.providersCaption;
     }
+    if (divarLocationLabelNode) {
+      divarLocationLabelNode.textContent = translation.divarLocationLabel;
+    }
+    if (divarLocationHintNode) {
+      divarLocationHintNode.textContent = translation.divarLocationHint;
+    }
     providerSettingsBlock.classList.add("is-expanded");
     clearFiltersButton.textContent = translation.clearFilters;
     clearFiltersButton.disabled = !hasActiveFilters();
-    setTitleAndAria(
-      globalSettingsToggleButton,
-      state.globalSettingsExpanded ? translation.globalSettingsCollapseHint : translation.globalSettingsExpandHint
-    );
     setTitleAndAria(languageButton, translation.switchLanguageHint);
     setTitleAndAria(
       themeButton,
       `${translation.cycleThemeHint} (${translation[`theme_${state.themeMode}`] || translation.theme_system})`
     );
+    advancedModeLabelNode.textContent = translation.advancedModeLabel;
+    advancedModeToggleButton.setAttribute("aria-pressed", String(state.advancedModeEnabled));
+    setTitleAndAria(
+      advancedModeToggleButton,
+      state.advancedModeEnabled ? translation.advancedModeEnabledHint : translation.advancedModeDisabledHint
+    );
     queryInput.placeholder = translation.searchPlaceholder;
     queryInput.value = state.query;
     searchSubmitButton.textContent = translation.searchSubmit;
-    searchAllButton.textContent = translation.searchAllEnabled;
     openAllButton.textContent = translation.openAllSearches;
     openAllButton.disabled = !getProviderSearchEntries().some(({ result }) => Boolean(result?.searchUrl));
     groupingLabelNode.textContent = translation.groupByProviders;
@@ -669,6 +757,7 @@
     heroBodyNode.textContent = translation.heroBody;
     renderGlobalSettingsSummary();
     renderProviderChips();
+    renderDivarLocationSelector();
     renderProviderWarning();
     renderChipEditor("include");
     renderChipEditor("exclude");
@@ -691,10 +780,11 @@
     const language = state.language;
     providerChipsNode.innerHTML = ALL_PROVIDER_SITES.map((provider) => {
       const active = state.selectedProviders.includes(provider);
+      const label = siteLabelFor(provider, language);
       return `
         <button class="provider-chip ${active ? "is-active" : ""}" type="button" data-provider="${escapeHtml(provider)}" aria-pressed="${String(active)}">
-          <span class="provider-chip-dot" aria-hidden="true"></span>
-          <span>${escapeHtml(siteLabelFor(provider, language))}</span>
+          ${buildProviderIconMarkup(provider, label, "provider-icon--chip")}
+          <span>${escapeHtml(label)}</span>
         </button>
       `;
     }).join("");
@@ -710,6 +800,7 @@
     const translation = t();
     const languageValue = state.language === "fa" ? "FA" : "EN";
     globalSettingsSummaryNode.innerHTML = [
+      state.advancedModeEnabled ? translation.summaryModeAdvanced : translation.summaryModeSimple,
       formatString(translation.summaryLanguage, { value: languageValue }),
       formatString(translation.summaryTheme, { value: translation[`theme_${state.themeMode}`] || translation.theme_system }),
       formatString(translation.summaryMaxResults, { value: String(state.maxResults) }),
@@ -752,6 +843,11 @@
   }
 
   function renderQueryPreview() {
+    if (!state.advancedModeEnabled) {
+      queryPreviewNode.innerHTML = "";
+      queryPreviewNode.classList.remove("is-visible");
+      return;
+    }
     const translation = t();
     const plan = buildLocalQueryPlan();
     if (!plan.baseQuery && !plan.includeTerms.length && !plan.excludeTerms.length && plan.conditionFilter === "any") {
@@ -801,7 +897,7 @@
     const translation = t();
     const hasQuery = Boolean(String(state.query || "").trim());
     const suggestions = Array.isArray(state.response?.suggestions) ? state.response.suggestions : [];
-    const queryMatchesResponse = String(state.response?.query || "").trim() === String(state.query || "").trim();
+    const queryMatchesResponse = areQueriesEquivalent(state.response?.query, state.query);
     if (state.loading || !hasQuery || !queryMatchesResponse) {
       suggestionsNode.innerHTML = "";
       suggestionsNode.classList.remove("is-visible");
@@ -953,6 +1049,54 @@
     render();
   }
 
+  function applySimpleModeDefaults() {
+    const previousSignature = buildSearchSignature(buildSearchPayload());
+    const previousGroupByProvider = state.groupByProvider;
+    state.includeTerms = [];
+    state.excludeTerms = [];
+    state.conditionFilter = "any";
+    state.groupByProvider = true;
+    state.dedupeEnabled = false;
+    state.maxResults = 3;
+    ensureActiveRow();
+    return {
+      searchPayloadChanged: previousSignature !== buildSearchSignature(buildSearchPayload()),
+      tableChanged: previousGroupByProvider !== state.groupByProvider
+    };
+  }
+
+  async function setAdvancedMode(enabled) {
+    const nextValue = Boolean(enabled);
+    if (state.advancedModeEnabled === nextValue) {
+      render();
+      return;
+    }
+    state.advancedModeEnabled = nextValue;
+    let shouldRenderImmediately = true;
+    if (!nextValue) {
+      const { searchPayloadChanged, tableChanged } = applySimpleModeDefaults();
+      if (searchPayloadChanged) {
+        if (state.loading) {
+          shouldRenderImmediately = true;
+          state.pendingSearchRerun = true;
+        } else if (state.response?.ok && String(state.query || "").trim()) {
+          shouldRenderImmediately = false;
+          runSearch().catch(() => {});
+        } else {
+          shouldRenderImmediately = true;
+        }
+      } else if (tableChanged) {
+        ensureActiveRow();
+      }
+    }
+    if (shouldRenderImmediately) {
+      render();
+    }
+    await chrome.storage.local.set({
+      rashnuGlobalSearchAdvancedMode: state.advancedModeEnabled
+    });
+  }
+
   function renderProviderBlocker() {
     const translation = t();
     if (state.selectedProviders.length) {
@@ -981,7 +1125,7 @@
       return;
     }
     if (state.loading) {
-      statusBarNode.innerHTML = `<strong>${escapeHtml(translation.loading)}</strong>`;
+      statusBarNode.innerHTML = buildLoadingInlineMarkup(translation.loading);
       return;
     }
     if (state.response?.ok) {
@@ -1010,7 +1154,7 @@
     if (state.loading && !state.response) {
       resultsBodyNode.innerHTML = `
         <tr class="empty-row">
-          <td colspan="8">${escapeHtml(translation.loadingRows)}</td>
+          <td colspan="8">${buildLoadingInlineMarkup(translation.loadingRows, { centered: true })}</td>
         </tr>
       `;
       return;
@@ -1075,6 +1219,7 @@
             <td colspan="8">
               <div class="provider-group">
                 <div class="provider-group-label">
+                  ${buildProviderIconMarkup(provider, siteLabelFor(provider, state.language), "provider-icon--group")}
                   <span>${escapeHtml(siteLabelFor(provider, state.language))}</span>
                   <span class="provider-status is-${escapeHtml(result.status || "not_found")}">${escapeHtml(statusLabel)}</span>
                 </div>
@@ -1115,7 +1260,12 @@
       : `<div class="result-thumb is-broken" aria-hidden="true"></div>`;
     return `
       <tr class="result-row ${active ? "is-active" : ""}" data-row-key="${escapeHtml(rowKey)}" title="${active ? escapeHtml(translation.activeRowHint) : ""}">
-        <td class="col-provider-cell">${escapeHtml(siteLabelFor(provider, state.language))}</td>
+        <td class="col-provider-cell">
+          <div class="provider-cell-label">
+            ${buildProviderIconMarkup(provider, siteLabelFor(provider, state.language), "provider-icon--cell")}
+            <span>${escapeHtml(siteLabelFor(provider, state.language))}</span>
+          </div>
+        </td>
         <td class="col-rank-cell"><span class="rank-pill">${escapeHtml(formatString(translation.rankPrefix, { rank: String(row.rank || 0) }))}</span></td>
         <td>
           <div class="result-title-cell">
@@ -1174,9 +1324,15 @@
           numeric: true
         });
       } else if (state.sortKey === "price") {
-        comparison = compareNullableNumbersForSort(left.priceValue, right.priceValue, directionFactor);
+        comparison = comparePriceValuesForSort(left.priceValue, left.priceText, right.priceValue, right.priceText, directionFactor);
       } else if (state.sortKey === "original") {
-        comparison = compareNullableNumbersForSort(left.originalPriceValue, right.originalPriceValue, directionFactor);
+        comparison = comparePriceValuesForSort(
+          left.originalPriceValue,
+          left.originalPriceText,
+          right.originalPriceValue,
+          right.originalPriceText,
+          directionFactor
+        );
       } else if (state.sortKey === "discount") {
         comparison = compareNullableNumbersForSort(
           parsePercentValue(left.discountPercent),
@@ -1247,21 +1403,6 @@
     state.activeRowKey = rowKey;
     pendingActiveRowReveal = true;
     renderResults();
-  }
-
-  function toggleAccordion(blockNode, stateKey) {
-    const anchorBefore = blockNode instanceof HTMLElement ? blockNode.getBoundingClientRect().top : 0;
-    state[stateKey] = !state[stateKey];
-    render();
-    window.requestAnimationFrame(() => {
-      if (!(blockNode instanceof HTMLElement)) {
-        return;
-      }
-      const delta = blockNode.getBoundingClientRect().top - anchorBefore;
-      if (Math.abs(delta) > 1) {
-        window.scrollBy(0, delta);
-      }
-    });
   }
 
   function updateMaxResults(nextValue) {
@@ -1472,8 +1613,11 @@
       return;
     }
 
-    if (/^[1-6]$/.test(event.key)) {
+    if (/^[1-9]$/.test(event.key)) {
       const index = Number.parseInt(event.key, 10) - 1;
+      if (index >= ALL_PROVIDER_SITES.length) {
+        return;
+      }
       const provider = state.selectedProviders[index];
       if (!provider) {
         return;
@@ -1492,28 +1636,54 @@
   }
 
   function siteLabelFor(provider, language) {
-    if (language === "fa") {
-      return globalThis.RashnuNormalize.getSiteLabel(provider);
+    return globalThis.RashnuNormalize.getSiteLabel(provider, language);
+  }
+
+  function siteIconFor(provider) {
+    const iconPath = globalThis.RashnuNormalize.getProviderIconPath(provider);
+    return iconPath ? extensionAssetUrl(iconPath) : "";
+  }
+
+  function buildProviderIconMarkup(provider, label, sizeClass) {
+    const iconUrl = siteIconFor(provider);
+    const iconClassName = `provider-icon ${sizeClass || ""}`.trim();
+    if (iconUrl) {
+      return `
+        <span class="${escapeHtml(iconClassName)}" aria-hidden="true">
+          <img src="${escapeHtml(iconUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">
+        </span>
+      `;
     }
-    if (provider === "digikala") {
-      return "Digikala";
+    return `
+      <span class="${escapeHtml(iconClassName)} provider-icon--fallback" aria-hidden="true">
+        ${escapeHtml(String(label || provider || "?").slice(0, 1).toUpperCase())}
+      </span>
+    `;
+  }
+
+  function buildLoadingInlineMarkup(label, options = {}) {
+    return `
+      <span class="loading-inline ${options.centered ? "loading-inline--center" : ""}">
+        <span class="loading-spinner" aria-hidden="true"></span>
+        <span>${escapeHtml(label)}</span>
+      </span>
+    `;
+  }
+
+  function areQueriesEquivalent(left, right) {
+    return normalizeQueryForUiComparison(left) === normalizeQueryForUiComparison(right);
+  }
+
+  function normalizeQueryForUiComparison(value) {
+    const raw = String(value || "").trim();
+    if (!raw) {
+      return "";
     }
-    if (provider === "technolife") {
-      return "Technolife";
-    }
-    if (provider === "emalls") {
-      return "Emalls";
-    }
-    if (provider === "ebay") {
-      return "eBay";
-    }
-    if (provider === "torob") {
-      return "Torob";
-    }
-    if (provider === "amazon") {
-      return "Amazon";
-    }
-    return provider;
+    const normalized =
+      globalThis.RashnuNormalize.buildSearchQuery(raw) ||
+      globalThis.RashnuNormalize.cleanProductTitle(raw) ||
+      raw;
+    return globalThis.RashnuNormalize.normalizeWhitespace(normalized);
   }
 
   function buildProviderSearchUrl(provider) {
@@ -1529,6 +1699,9 @@
     }
     if (provider === "emalls") {
       return globalThis.RashnuNormalize.buildEmallsSearchUrl(query);
+    }
+    if (provider === "divar") {
+      return globalThis.RashnuNormalize.buildDivarSearchUrl(query, state.divarLocation?.slug || "tehran");
     }
     if (provider === "amazon") {
       return globalThis.RashnuNormalize.buildAmazonSearchUrl(query);
@@ -1587,6 +1760,52 @@
     return `${provider}:${rank}`;
   }
 
+  function renderDivarLocationSelector() {
+    if (!divarLocationSelect) {
+      return;
+    }
+    const translation = t();
+    const options = Array.isArray(state.divarLocationOptions) ? state.divarLocationOptions : [];
+    const selectedId = String(state.divarLocation?.id || "");
+    const showDivarLocation = state.selectedProviders.includes("divar");
+    if (divarLocationField instanceof HTMLElement) {
+      if (!showDivarLocation) {
+        divarLocationField.remove();
+        divarLocationField.hidden = true;
+        divarLocationField.style.display = "none";
+        divarLocationField.setAttribute("aria-hidden", "true");
+        divarLocationField.classList.remove("provider-select-field--inline");
+      } else {
+        divarLocationField.hidden = false;
+        divarLocationField.style.display = "";
+        divarLocationField.setAttribute("aria-hidden", "false");
+        divarLocationField.classList.add("provider-select-field--inline");
+        const divarChip = providerChipsNode.querySelector('[data-provider="divar"]');
+        if (divarChip?.parentNode === providerChipsNode) {
+          divarChip.insertAdjacentElement("afterend", divarLocationField);
+        } else if (providerChipsNode) {
+          providerChipsNode.appendChild(divarLocationField);
+        }
+      }
+    }
+    divarLocationSelect.disabled = options.length <= 1;
+    divarLocationSelect.innerHTML = options.length
+      ? options.map((option) => `
+          <option value="${escapeHtml(String(option.id))}" ${String(option.id) === selectedId ? "selected" : ""}>
+            ${escapeHtml(option.name || translation.divarLocationLoading)}
+          </option>
+        `).join("")
+      : `<option value="">${escapeHtml(translation.divarLocationLoading)}</option>`;
+  }
+
+  function getSelectedDivarLocation(idValue) {
+    const targetId = Number.parseInt(idValue, 10);
+    if (!Number.isFinite(targetId)) {
+      return null;
+    }
+    return state.divarLocationOptions.find((option) => Number(option?.id) === targetId) || null;
+  }
+
   function localizeDynamicText(value, language) {
     const raw = String(value || "");
     if (!raw) {
@@ -1616,10 +1835,10 @@
   }
 
   function compareNullableNumbers(left, right) {
-    const leftNumber = Number(left);
-    const rightNumber = Number(right);
-    const leftValid = Number.isFinite(leftNumber);
-    const rightValid = Number.isFinite(rightNumber);
+    const leftNumber = toSortableNumber(left);
+    const rightNumber = toSortableNumber(right);
+    const leftValid = leftNumber !== null;
+    const rightValid = rightNumber !== null;
     if (!leftValid && !rightValid) {
       return 0;
     }
@@ -1633,10 +1852,10 @@
   }
 
   function compareNullableNumbersForSort(left, right, directionFactor) {
-    const leftNumber = Number(left);
-    const rightNumber = Number(right);
-    const leftValid = Number.isFinite(leftNumber);
-    const rightValid = Number.isFinite(rightNumber);
+    const leftNumber = toSortableNumber(left);
+    const rightNumber = toSortableNumber(right);
+    const leftValid = leftNumber !== null;
+    const rightValid = rightNumber !== null;
     if (!leftValid && !rightValid) {
       return 0;
     }
@@ -1647,6 +1866,49 @@
       return -1;
     }
     return (leftNumber - rightNumber) * directionFactor;
+  }
+
+  function comparePriceValuesForSort(leftValue, leftText, rightValue, rightText, directionFactor) {
+    const leftNumber = toSortablePriceNumber(leftValue, leftText);
+    const rightNumber = toSortablePriceNumber(rightValue, rightText);
+    const leftValid = leftNumber !== null;
+    const rightValid = rightNumber !== null;
+    if (!leftValid && !rightValid) {
+      return 0;
+    }
+    if (!leftValid) {
+      return 1;
+    }
+    if (!rightValid) {
+      return -1;
+    }
+    return (leftNumber - rightNumber) * directionFactor;
+  }
+
+  function toSortableNumber(value) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    if (typeof value === "string" && !value.trim()) {
+      return null;
+    }
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return null;
+    }
+    return numeric;
+  }
+
+  function toSortablePriceNumber(value, text) {
+    const numeric = toSortableNumber(value);
+    if (numeric === null || numeric <= 0) {
+      return null;
+    }
+    const rawText = String(text || "").trim();
+    if (rawText && !/\d/.test(rawText) && /نامشخص|unknown|contact|call|توافقی|معاوضه|بدون قیمت/iu.test(rawText)) {
+      return null;
+    }
+    return numeric;
   }
 
   function defaultSortDirection(sortKey) {
@@ -1697,6 +1959,14 @@
         return "☀";
       default:
         return "◐";
+    }
+  }
+
+  function extensionAssetUrl(path) {
+    try {
+      return chrome.runtime.getURL(path);
+    } catch (_error) {
+      return path;
     }
   }
 

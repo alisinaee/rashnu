@@ -32,21 +32,19 @@
         </header>
 
         <section class="settings-shell">
-          <div class="settings-accordion" data-role="global-settings-block">
+          <div class="settings-accordion settings-accordion--global is-expanded" data-role="global-settings-block">
             <div class="settings-accordion-header">
-              <button class="settings-accordion-toggle" type="button" data-action="toggle-global-settings" aria-expanded="false">
-                <span class="settings-accordion-heading">
-                  <span class="settings-accordion-meta">
-                    <span class="settings-accordion-title" data-role="global-settings-title"></span>
-                    <span class="settings-accordion-caption" data-role="global-settings-caption"></span>
-                  </span>
+              <div class="settings-accordion-heading">
+                <span class="settings-accordion-meta">
+                  <span class="settings-accordion-title" data-role="global-settings-title"></span>
+                  <span class="settings-accordion-caption" data-role="global-settings-caption"></span>
                 </span>
-                <span class="settings-accordion-actions">
-                  <span class="settings-accordion-state" data-role="global-settings-state"></span>
-                  <span class="settings-accordion-toggle-icon" aria-hidden="true">â–¾</span>
-                </span>
-              </button>
+              </div>
               <div class="settings-accordion-header-actions">
+                <button class="compact-switch-button" type="button" data-action="toggle-advanced-mode" aria-pressed="false">
+                  <span class="switch-label" data-role="advanced-mode-label"></span>
+                  <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                </button>
                 <button class="icon-button quick-action-button" type="button" data-action="toggle-language"></button>
                 <button class="icon-button quick-action-button" type="button" data-action="cycle-theme"></button>
               </div>
@@ -54,7 +52,7 @@
             <div class="settings-accordion-panel">
               <div class="settings-accordion-summary" data-role="global-settings-summary"></div>
               <div class="settings-accordion-body" data-role="global-settings-body">
-                <div class="search-settings">
+                <div class="search-settings advanced-only">
                   <button class="setting-switch-row" type="button" data-action="toggle-grouping" aria-pressed="true">
                     <span class="switch-label" data-role="grouping-label"></span>
                     <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
@@ -88,6 +86,13 @@
             <div class="settings-accordion-panel">
               <div class="settings-accordion-body" data-role="provider-settings-body">
                 <div class="provider-chip-list" data-role="provider-chips"></div>
+                <div class="provider-select-field">
+                  <label class="provider-select-copy" for="search-divar-location">
+                    <strong data-role="divar-location-label"></strong>
+                    <span data-role="divar-location-hint"></span>
+                  </label>
+                  <select id="search-divar-location" class="provider-select" data-role="divar-location-select"></select>
+                </div>
                 <p class="search-provider-warning" data-role="provider-warning"></p>
               </div>
             </div>
@@ -117,21 +122,14 @@
                 spellcheck="false"
                 data-role="query-input"
               >
+              <div class="search-input-actions">
+                <button class="secondary-button secondary-button--inline" type="button" data-action="open-all-searches"></button>
+                <button class="secondary-button secondary-button--inline filter-clear-button advanced-only" type="button" data-action="clear-filters" data-role="clear-filters"></button>
+              </div>
               <button class="primary-button" type="submit" data-role="search-submit"></button>
             </div>
 
-            <div class="toolbar-meta">
-              <div class="toolbar-actions">
-                <button class="secondary-button" type="submit" data-action="run-search"></button>
-                <button class="secondary-button" type="button" data-action="open-all-searches"></button>
-              </div>
-            </div>
-
-            <div class="filter-actions">
-              <button class="secondary-button filter-clear-button" type="button" data-action="clear-filters" data-role="clear-filters"></button>
-            </div>
-
-            <div class="search-refine-grid">
+            <div class="search-refine-grid advanced-only">
               <section class="chip-editor" data-role="include-editor">
                 <div class="chip-editor-head">
                   <strong data-role="include-label"></strong>
@@ -169,7 +167,7 @@
               </section>
             </div>
 
-            <div class="query-preview" data-role="query-preview"></div>
+            <div class="query-preview advanced-only" data-role="query-preview"></div>
             <div class="suggestion-strip" data-role="suggestions"></div>
           </form>
 

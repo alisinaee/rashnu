@@ -10,15 +10,30 @@
     <div class="panel-shell">
       <header class="panel-header">
         <div class="header-actions">
-          <button class="icon-button" data-action="reload-all">⟳</button>
-          <button class="icon-button" data-action="toggle-settings">⚙</button>
+          <button class="icon-button" data-action="reload-all" aria-label="Reload Rashnu">
+            <svg class="action-symbol action-symbol--reload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+              <polyline points="21 3 21 9 15 9"></polyline>
+            </svg>
+          </button>
+          <button class="icon-button" data-action="toggle-settings" aria-label="Settings">
+            <svg class="icon-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="3.2"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.05.05a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.05-.05a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.08a1.65 1.65 0 0 0-1.08-1.54 1.65 1.65 0 0 0-1.82.33l-.05.05a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.05-.05A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.08a1.65 1.65 0 0 0 1.54-1.08 1.65 1.65 0 0 0-.33-1.82l-.05-.05a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.05.05a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.08a1.65 1.65 0 0 0 1.08 1.54 1.65 1.65 0 0 0 1.82-.33l.05-.05a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.05.05A1.65 1.65 0 0 0 19.4 9c.2.48.67.8 1.2.82H21a2 2 0 0 1 0 4h-.08a1.65 1.65 0 0 0-1.52 1.18z"></path>
+            </svg>
+          </button>
           <button class="icon-button" data-action="open-search" aria-label="Open search">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="11" cy="11" r="6"></circle>
               <line x1="20" y1="20" x2="15.6" y2="15.6"></line>
             </svg>
           </button>
-          <button class="icon-button" data-action="open-help">?</button>
+          <button class="icon-button" data-action="open-help" aria-label="Help">
+            <svg class="icon-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9.1 9a3 3 0 1 1 5.46 1.7c-.73.82-1.56 1.38-2.06 2.1-.27.39-.4.72-.4 1.2"></path>
+              <circle cx="12" cy="17.2" r="1"></circle>
+            </svg>
+          </button>
         </div>
         <a
           class="brand-block"
@@ -110,12 +125,20 @@
                     <span class="switch-label" data-provider-label="emalls">Emalls</span>
                     <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
                   </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="divar" type="button">
+                    <span class="switch-label" data-provider-label="divar">Divar</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
                   <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="amazon" type="button">
                     <span class="switch-label" data-provider-label="amazon">Amazon</span>
                     <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
                   </button>
                   <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="ebay" type="button">
                     <span class="switch-label" data-provider-label="ebay">eBay</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-search" data-provider="basalam" type="button">
+                    <span class="switch-label" data-provider-label="basalam">Basalam</span>
                     <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
                   </button>
                 </div>
@@ -139,6 +162,10 @@
                     <span class="switch-label" data-provider-label="emalls">Emalls</span>
                     <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
                   </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="divar" type="button">
+                    <span class="switch-label" data-provider-label="divar">Divar</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
                   <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="amazon" type="button">
                     <span class="switch-label" data-provider-label="amazon">Amazon</span>
                     <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
@@ -147,8 +174,19 @@
                     <span class="switch-label" data-provider-label="ebay">eBay</span>
                     <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
                   </button>
+                  <button class="switch-row switch-row--provider" data-action="toggle-provider-price" data-provider="basalam" type="button">
+                    <span class="switch-label" data-provider-label="basalam">Basalam</span>
+                    <span class="switch-control" aria-hidden="true"><span class="switch-thumb"></span></span>
+                  </button>
                 </div>
               </div>
+            </div>
+            <div class="provider-select-field">
+              <label class="provider-select-copy" for="panel-divar-location">
+                <span class="paired-label" data-divar-location-label>Divar City</span>
+                <span class="provider-select-hint" data-divar-location-hint>Used only for Divar searches.</span>
+              </label>
+              <select id="panel-divar-location" class="provider-select" data-divar-location-select></select>
             </div>
             <p class="settings-help settings-provider-warning" data-provider-warning>
               Amazon and eBay may detect extension traffic as bot activity, so results are not always reliable.

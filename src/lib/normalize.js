@@ -84,6 +84,113 @@
     /\s+دیدگاه.*$/u,
     /\s+نظر.*$/u
   ];
+  const PROVIDER_REGISTRY = [
+    {
+      id: "torob",
+      labelFa: "ترب",
+      labelEn: "Torob",
+      iconPath: "assets/site-icons/torob-192.png",
+      hostPatterns: ["torob.com"],
+      searchButtonSupported: true,
+      sourcePageSupported: true,
+      matchSupported: true,
+      globalSearchSupported: true,
+      searchEnabledDefault: true,
+      priceVisibleDefault: true
+    },
+    {
+      id: "digikala",
+      labelFa: "دیجیکالا",
+      labelEn: "Digikala",
+      iconPath: "assets/site-icons/digikala-192.png",
+      hostPatterns: ["digikala.com"],
+      searchButtonSupported: true,
+      sourcePageSupported: true,
+      matchSupported: true,
+      globalSearchSupported: true,
+      searchEnabledDefault: true,
+      priceVisibleDefault: true
+    },
+    {
+      id: "technolife",
+      labelFa: "تکنولایف",
+      labelEn: "Technolife",
+      iconPath: "assets/site-icons/technolife-192.png",
+      hostPatterns: ["technolife.com"],
+      searchButtonSupported: true,
+      sourcePageSupported: true,
+      matchSupported: true,
+      globalSearchSupported: true,
+      searchEnabledDefault: true,
+      priceVisibleDefault: true
+    },
+    {
+      id: "emalls",
+      labelFa: "ایمالز",
+      labelEn: "Emalls",
+      iconPath: "assets/site-icons/emalls.svg",
+      hostPatterns: ["emalls.ir"],
+      searchButtonSupported: true,
+      sourcePageSupported: true,
+      matchSupported: true,
+      globalSearchSupported: true,
+      searchEnabledDefault: true,
+      priceVisibleDefault: true
+    },
+    {
+      id: "divar",
+      labelFa: "دیوار",
+      labelEn: "Divar",
+      iconPath: "assets/site-icons/divar-192.png",
+      hostPatterns: ["divar.ir"],
+      searchButtonSupported: true,
+      sourcePageSupported: false,
+      matchSupported: true,
+      globalSearchSupported: true,
+      searchEnabledDefault: true,
+      priceVisibleDefault: false
+    },
+    {
+      id: "amazon",
+      labelFa: "آمازون",
+      labelEn: "Amazon",
+      iconPath: "assets/site-icons/amazon.svg",
+      hostPatterns: ["amazon."],
+      searchButtonSupported: true,
+      sourcePageSupported: true,
+      matchSupported: true,
+      globalSearchSupported: true,
+      searchEnabledDefault: true,
+      priceVisibleDefault: true
+    },
+    {
+      id: "ebay",
+      labelFa: "ای‌بِی",
+      labelEn: "eBay",
+      iconPath: "assets/site-icons/ebay.svg",
+      hostPatterns: ["ebay."],
+      searchButtonSupported: true,
+      sourcePageSupported: true,
+      matchSupported: true,
+      globalSearchSupported: true,
+      searchEnabledDefault: true,
+      priceVisibleDefault: true
+    },
+    {
+      id: "basalam",
+      labelFa: "باسلام",
+      labelEn: "Basalam",
+      iconPath: "assets/site-icons/basalam.svg",
+      hostPatterns: ["basalam.com"],
+      searchButtonSupported: true,
+      sourcePageSupported: true,
+      matchSupported: false,
+      globalSearchSupported: true,
+      searchEnabledDefault: true,
+      priceVisibleDefault: true
+    }
+  ];
+  const PROVIDER_REGISTRY_MAP = new Map(PROVIDER_REGISTRY.map((provider) => [provider.id, provider]));
 
   function replacePersianVariants(value) {
     return String(value || "")
@@ -324,6 +431,19 @@
     return match ? match[1] : null;
   }
 
+  function extractBasalamProductSegments(url) {
+    const match = String(url || "").match(
+      /^https?:\/\/(?:www\.)?basalam\.com\/([^/?#]+)\/product\/(\d+)(?:[/?#]|$)/i
+    );
+    if (!match) {
+      return null;
+    }
+    return {
+      vendorSlug: match[1],
+      productId: match[2]
+    };
+  }
+
   function buildSourceId(productUrl, site) {
     const canonicalUrl = canonicalizeUrl(productUrl);
     if (site === "digikala") {
@@ -354,6 +474,11 @@
     if (site === "ebay") {
       const itemId = extractEbayItemIdFromUrl(canonicalUrl);
       return itemId ? `ebay:${itemId}` : `ebay:${canonicalUrl}`;
+    }
+
+    if (site === "basalam") {
+      const segments = extractBasalamProductSegments(canonicalUrl);
+      return segments ? `basalam:${segments.vendorSlug}:${segments.productId}` : `basalam:${canonicalUrl}`;
     }
 
     return canonicalUrl;
@@ -404,6 +529,14 @@
     return `https://emalls.ir/لیست-قیمت~skey~${encodeURIComponent(normalizedQuery)}`;
   }
 
+  function buildDivarSearchUrl(query, locationSegment) {
+    const normalizedQuery = normalizeWhitespace(valueOrFallback(query));
+    const normalizedLocationSegment = String(locationSegment || "tehran").trim() || "tehran";
+    const url = new URL(`https://divar.ir/s/${encodeURIComponent(normalizedLocationSegment)}`);
+    url.searchParams.set("q", normalizedQuery);
+    return url.toString();
+  }
+
   function buildAmazonSearchUrl(query) {
     const url = new URL("https://www.amazon.com/s");
     url.searchParams.set("k", normalizeWhitespace(valueOrFallback(query)));
@@ -416,29 +549,108 @@
     return url.toString();
   }
 
+  function buildBasalamSearchUrl(query) {
+    const url = new URL("https://basalam.com/search");
+    url.searchParams.set("q", normalizeWhitespace(valueOrFallback(query)));
+    return url.toString();
+  }
+
   function buildGoogleSearchUrl(query) {
     const url = new URL("https://www.google.com/search");
     url.searchParams.set("q", normalizeWhitespace(valueOrFallback(query)));
     return url.toString();
   }
 
-  function getSiteLabel(site) {
-    switch (site) {
-      case "digikala":
-        return "دیجیکالا";
-      case "torob":
-        return "ترب";
-      case "technolife":
-        return "تکنولایف";
-      case "emalls":
-        return "ایمالز";
-      case "amazon":
-        return "آمازون";
-      case "ebay":
-        return "ای‌بِی";
-      default:
-        return "نامشخص";
+  function getProviderConfig(site) {
+    return PROVIDER_REGISTRY_MAP.get(String(site || "").trim().toLowerCase()) || null;
+  }
+
+  function getProviderRegistry() {
+    return PROVIDER_REGISTRY.map((provider) => ({ ...provider }));
+  }
+
+  function getProviderIds() {
+    return PROVIDER_REGISTRY.map((provider) => provider.id);
+  }
+
+  function getTargetProviderSites() {
+    return PROVIDER_REGISTRY.filter((provider) => provider.matchSupported).map((provider) => provider.id);
+  }
+
+  function getGlobalSearchProviderSites() {
+    return PROVIDER_REGISTRY.filter((provider) => provider.globalSearchSupported).map((provider) => provider.id);
+  }
+
+  function getSearchButtonProviderSites() {
+    return PROVIDER_REGISTRY.filter((provider) => provider.searchButtonSupported).map((provider) => provider.id);
+  }
+
+  function getSourcePageProviderSites() {
+    return PROVIDER_REGISTRY.filter((provider) => provider.sourcePageSupported).map((provider) => provider.id);
+  }
+
+  function getPriceVisibilityProviderSites() {
+    return PROVIDER_REGISTRY.filter(
+      (provider) => provider.matchSupported || provider.sourcePageSupported
+    ).map((provider) => provider.id);
+  }
+
+  function isSourcePageSupportedSite(site) {
+    return Boolean(getProviderConfig(site)?.sourcePageSupported);
+  }
+
+  function isTargetProviderSite(site) {
+    return Boolean(getProviderConfig(site)?.matchSupported);
+  }
+
+  function isGlobalSearchProviderSite(site) {
+    return Boolean(getProviderConfig(site)?.globalSearchSupported);
+  }
+
+  function isSearchButtonProviderSite(site) {
+    return Boolean(getProviderConfig(site)?.searchButtonSupported);
+  }
+
+  function getTargetSitesForSource(sourceSite) {
+    return getTargetProviderSites().filter((site) => site !== sourceSite);
+  }
+
+  function getSearchButtonSitesForSource(sourceSite) {
+    return getSearchButtonProviderSites().filter((site) => site !== sourceSite);
+  }
+
+  function buildDefaultProviderSearchFlags() {
+    const output = {};
+    for (const provider of PROVIDER_REGISTRY) {
+      if (!provider.searchButtonSupported) {
+        continue;
+      }
+      output[provider.id] = Boolean(provider.searchEnabledDefault);
     }
+    return output;
+  }
+
+  function buildDefaultProviderPriceFlags() {
+    const output = {};
+    for (const provider of PROVIDER_REGISTRY) {
+      if (!provider.matchSupported && !provider.sourcePageSupported) {
+        continue;
+      }
+      output[provider.id] = Boolean(provider.priceVisibleDefault);
+    }
+    return output;
+  }
+
+  function getProviderIconPath(site) {
+    return getProviderConfig(site)?.iconPath || "";
+  }
+
+  function getSiteLabel(site, language = "fa") {
+    const provider = getProviderConfig(site);
+    if (!provider) {
+      return language === "en" ? "Unknown" : "نامشخص";
+    }
+    return language === "en" ? provider.labelEn : provider.labelFa;
   }
 
   function valueOrFallback(value) {
@@ -466,6 +678,7 @@
     extractEmallsProductIdFromUrl,
     extractAmazonAsinFromUrl,
     extractEbayItemIdFromUrl,
+    extractBasalamProductSegments,
     buildSourceId,
     inferBrand,
     buildSearchQuery,
@@ -473,9 +686,28 @@
     buildDigikalaSearchUrl,
     buildTechnolifeSearchUrl,
     buildEmallsSearchUrl,
+    buildDivarSearchUrl,
     buildAmazonSearchUrl,
     buildEbaySearchUrl,
+    buildBasalamSearchUrl,
     buildGoogleSearchUrl,
+    getProviderConfig,
+    getProviderRegistry,
+    getProviderIds,
+    getTargetProviderSites,
+    getGlobalSearchProviderSites,
+    getSearchButtonProviderSites,
+    getSourcePageProviderSites,
+    getPriceVisibilityProviderSites,
+    isSourcePageSupportedSite,
+    isTargetProviderSite,
+    isGlobalSearchProviderSite,
+    isSearchButtonProviderSite,
+    getTargetSitesForSource,
+    getSearchButtonSitesForSource,
+    buildDefaultProviderSearchFlags,
+    buildDefaultProviderPriceFlags,
+    getProviderIconPath,
     getSiteLabel
   };
 })();

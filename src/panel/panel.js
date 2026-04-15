@@ -55,16 +55,20 @@
   const providerSettingsToggleButton = document.querySelector('[data-action="toggle-provider-settings-editor"]');
   const providerSettingsTitle = document.querySelector("[data-provider-settings-title]");
   const providerWarningText = document.querySelector("[data-provider-warning]");
+  const divarLocationLabel = document.querySelector("[data-divar-location-label]");
+  const divarLocationHint = document.querySelector("[data-divar-location-hint]");
+  const divarLocationSelect = document.querySelector("[data-divar-location-select]");
   const providerLabels = Array.from(document.querySelectorAll("[data-provider-label]"));
   const providerSearchButtons = Array.from(document.querySelectorAll('[data-action="toggle-provider-search"]'));
   const providerPriceButtons = Array.from(document.querySelectorAll('[data-action="toggle-provider-price"]'));
-  const ALL_PROVIDER_SITES = ["torob", "digikala", "technolife", "emalls", "amazon", "ebay"];
+  const SEARCH_PROVIDER_SITES = globalThis.RashnuNormalize.getSearchButtonProviderSites();
+  const PRICE_PROVIDER_SITES = globalThis.RashnuNormalize.getPriceVisibilityProviderSites();
 
   const TRANSLATIONS = {
     fa: {
       pageWaiting: "منتظر یک صفحه پشتیبانی‌شده...",
       unsupportedPage:
-        "این تب در حال حاضر صفحه‌ی فهرست یا جزئیات محصول در دیجیکالا، ترب، تکنولایف، ایمالز، آمازون یا eBay نیست.",
+        "این تب در حال حاضر صفحه‌ی فهرست یا جزئیات محصول در باسلام، دیجیکالا، ترب، تکنولایف، ایمالز، آمازون یا eBay نیست.",
       modeTitle: "{source} → {target}",
       settingsDefault: "حالت عادی: محصولات قابل مشاهده روی صفحه بررسی می‌شوند.",
       settingsSelection:
@@ -74,6 +78,8 @@
       exportLogsHint: "خروجی گرفتن از لاگ‌های دیباگ این جلسه برای ارسال گزارش.",
       clearLogs: "پاک کردن",
       clearLogsHint: "پاک کردن لاگ‌های ثبت‌شده در همین جلسه از پنل.",
+      reloadExtension: "نوسازی Rashnu",
+      reloadExtensionHint: "Rashnu را در تب فعلی از نو بساز و پنل را باز نگه دار.",
       reloadAll: "بارگذاری دوباره همه",
       reloadAllHint: "بارگذاری دوباره همه آیتم‌های پنل از صفحه فعلی.",
       sizeMeta: "اندازه: {value}",
@@ -102,6 +108,9 @@
       providerSettingsExpandHint: "باز کردن تنظیمات منابع مقایسه.",
       providerSettingsCollapseHint: "بستن تنظیمات منابع مقایسه.",
       providerNoActive: "هیچ‌کدام",
+      divarLocationLabel: "شهر دیوار",
+      divarLocationHint: "فقط برای جست‌وجوهای دیوار استفاده می‌شود.",
+      divarLocationLoading: "در حال بارگذاری...",
       providerWarning:
         "هشدار: آمازون و eBay ممکن است ترافیک افزونه را به‌عنوان رفتار بات تشخیص دهند، بنابراین نتایج این دو منبع همیشه کاملاً قابل اتکا نیست.",
       layout: "چیدمان",
@@ -109,7 +118,7 @@
       layoutGrid: "گرید",
       fontSize: "اندازه",
       unsupportedEmpty:
-        "برای استفاده از Rashnu یک صفحه‌ی فهرست یا جزئیات محصول در دیجیکالا، ترب، تکنولایف، ایمالز، آمازون یا eBay باز کنید.",
+        "برای استفاده از Rashnu یک صفحه‌ی فهرست یا جزئیات محصول در باسلام، دیجیکالا، ترب، تکنولایف، ایمالز، آمازون یا eBay باز کنید.",
       selectionEmpty: "ماوس را روی یک کارت محصول ببرید یا روی آن فوکوس کنید.",
       noItems: "هنوز نتیجه‌ای برای نمایش وجود ندارد.",
       summarySelection:
@@ -189,7 +198,7 @@
     en: {
       pageWaiting: "Waiting for a supported page...",
       unsupportedPage:
-        "This tab is not a Digikala, Torob, Technolife, Emalls, Amazon, or eBay product listing/detail page.",
+        "This tab is not a Basalam, Digikala, Torob, Technolife, Emalls, Amazon, or eBay product listing/detail page.",
       modeTitle: "{source} → {target}",
       settingsDefault: "Normal mode: visible products on the page are tracked.",
       settingsSelection:
@@ -199,6 +208,8 @@
       exportLogsHint: "Export this session's debug logs so they can be shared for issue reports.",
       clearLogs: "Clear",
       clearLogsHint: "Clear logs captured in this panel session.",
+      reloadExtension: "Reload Rashnu",
+      reloadExtensionHint: "Rebuild Rashnu on the current tab without closing the side panel.",
       reloadAll: "Reload All",
       reloadAllHint: "Reload all panel items from the current page.",
       sizeMeta: "Size: {value}",
@@ -227,6 +238,9 @@
       providerSettingsExpandHint: "Expand comparison provider settings.",
       providerSettingsCollapseHint: "Collapse comparison provider settings.",
       providerNoActive: "None",
+      divarLocationLabel: "Divar City",
+      divarLocationHint: "Used only for Divar searches.",
+      divarLocationLoading: "Loading...",
       providerWarning:
         "Warning: Amazon and eBay may detect extension traffic as bot activity, so results on these providers are not always fully reliable.",
       layout: "Layout",
@@ -234,7 +248,7 @@
       layoutGrid: "Grid",
       fontSize: "Size",
       unsupportedEmpty:
-        "Open a Digikala, Torob, Technolife, Emalls, Amazon, or eBay listing/detail page to use Rashnu.",
+        "Open a Basalam, Digikala, Torob, Technolife, Emalls, Amazon, or eBay listing/detail page to use Rashnu.",
       selectionEmpty: "Hover or focus a product card to inspect just that item.",
       noItems: "No results are ready yet.",
       summarySelection:
@@ -326,6 +340,7 @@
   let providerSettingsExpanded = true;
   let providerSettingsExpandedOverride = null;
   const guideJumpTimers = new WeakMap();
+  const panelScrollPositions = new Map();
 
   boot().catch((error) => {
     logger.error("panel", "boot_failed", {
@@ -402,11 +417,33 @@
 
   function bindEvents() {
     reloadAllButton.addEventListener("click", async () => {
+      logger.info("panel", "reload_rashnu_clicked");
+      const response = await sendRuntimeMessage(
+        {
+          type: "RASHNU_RELOAD_EXTENSION"
+        },
+        {
+          attempts: 2,
+          retryDelayMs: 180,
+          suppressErrors: true,
+          fallbackValue: null
+        }
+      );
+      if (!response?.reloaded) {
+        await sendRuntimeMessage(
+          {
+            type: "RASHNU_RELOAD_EXTENSION",
+            payload: {
+              runtimeReload: true
+            }
+          },
+          {
+            attempts: 1,
+            suppressErrors: true
+          }
+        );
+      }
       forceRebuild();
-      await sendRuntimeMessage({
-        type: "RASHNU_RELOAD_ALL"
-      });
-      logger.info("panel", "reload_all_clicked");
       await refreshState();
       scheduleSoftRefresh(550);
     });
@@ -542,6 +579,18 @@
       });
     }
 
+    divarLocationSelect?.addEventListener("change", async () => {
+      const nextLocation = getSelectedDivarLocation(currentState, divarLocationSelect.value);
+      if (!nextLocation) {
+        return;
+      }
+      await sendRuntimeMessage({
+        type: "RASHNU_SET_DIVAR_LOCATION",
+        payload: { location: nextLocation }
+      });
+      await refreshState();
+    });
+
     layoutListButton.addEventListener("click", async () => {
       await sendRuntimeMessage({
         type: "RASHNU_SET_LAYOUT_MODE",
@@ -653,12 +702,13 @@
     itemsList.addEventListener("scroll", () => {
       if (!isProgrammaticScroll) {
         markPanelUserScrolling();
+        rememberPanelScrollPosition(currentState);
       }
     });
   }
 
   async function refreshState() {
-    const scrollTop = itemsList.scrollTop;
+    rememberPanelScrollPosition(currentState);
     try {
       currentState = await sendRuntimeMessage(
         {
@@ -680,13 +730,18 @@
       scheduleSoftRefresh(700);
       return;
     }
+    const savedScrollTop = getSavedPanelScrollPosition(currentState);
     const rerenderedList = render(currentState);
     hydrateDynamicIcons();
     if (rerenderedList === "rebuild") {
-      itemsList.scrollTop = scrollTop;
+      restorePanelScrollPosition(savedScrollTop);
       bindImageStates();
     } else if (rerenderedList === "patch") {
+      restorePanelScrollPosition(savedScrollTop);
       bindImageStates();
+    }
+    if (Number.isFinite(savedScrollTop)) {
+      panelScrollHoldUntil = Date.now() + 1200;
     }
     syncPanelToPageView(currentState);
     renderLogHelperStatus(currentState);
@@ -759,7 +814,7 @@
     openSearchButton.innerHTML = buildSearchIconMarkup();
     helpButton.innerHTML = buildHelpIconMarkup();
     closeSettingsButton.innerHTML = buildCloseIconMarkup();
-    setTitleAndAria(reloadAllButton, translation.reloadAllHint);
+    setTitleAndAria(reloadAllButton, translation.reloadExtensionHint);
     setTitleAndAria(
       toggleSettingsButton,
       Boolean(state?.settingsOpen) ? translation.settingsCloseHint : translation.settingsOpenHint
@@ -791,6 +846,12 @@
     }
     if (providerWarningText) {
       providerWarningText.textContent = translation.providerWarning;
+    }
+    if (divarLocationLabel) {
+      divarLocationLabel.textContent = translation.divarLocationLabel;
+    }
+    if (divarLocationHint) {
+      divarLocationHint.textContent = translation.divarLocationHint;
     }
     for (const labelNode of providerLabels) {
       const provider = String(labelNode.getAttribute("data-provider-label") || "");
@@ -847,6 +908,7 @@
       button.classList.toggle("is-active", enabled);
       button.setAttribute("aria-pressed", String(enabled));
     }
+    renderDivarLocationSelector(state, translation);
     updateProviderSettingsState(state, translation, language);
     layoutListButton.classList.toggle("is-active", state?.layoutMode !== "grid");
     layoutGridButton.classList.toggle("is-active", state?.layoutMode === "grid");
@@ -1004,8 +1066,10 @@
       matchBySite[match.targetSite] = match;
     }
     const allTargetSites = getProviderOrderForSource(item?.sourceSite);
-    const targetSites = allTargetSites.filter((site) => isProviderSearchEnabled(state, site));
-    const providerSites = [item.sourceSite, ...allTargetSites].filter(Boolean);
+    const allPriceSites = getPriceProviderOrderForSource(item?.sourceSite);
+    const allSearchActionSites = getSearchButtonOrderForSource(item?.sourceSite);
+    const targetSites = allSearchActionSites.filter((site) => isProviderSearchEnabled(state, site));
+    const providerSites = [item.sourceSite, ...allPriceSites].filter(Boolean);
     const sourcePriceVisible = isProviderPriceVisible(state, item.sourceSite);
     const visibleProviderSites = providerSites.filter((site) => isProviderPriceVisible(state, site));
     const guideNumber = Number.isFinite(item.guideNumber)
@@ -1042,14 +1106,20 @@
                 ? translation.status_loading
                 : translation.unknown));
         const priceText = localizeDynamicText(rawPriceText, language);
+        const isLoadingPrice = !isSource && siteSearchEnabled && siteStatus === "loading";
+        const priceMarkup = isLoadingPrice
+          ? buildLoadingInlineMarkup(priceText)
+          : escapeHtml(priceText);
         const extraMarkup = isSource
           ? sourceExtraMarkup
           : buildPriceExtraMarkup(siteMatch?.targetDiscountPercent, siteMatch?.targetOriginalPriceText, language);
+        const fallbackSearchUrl =
+          siteMatch?.searchUrl || (siteSearchEnabled ? buildTargetSearchUrl(site, item.title) : null);
         const providerProductUrl = isSource
           ? item.productUrl || null
           : siteMatch?.targetUrl && siteMatch?.targetUrl !== siteMatch?.searchUrl
             ? siteMatch.targetUrl
-            : null;
+            : fallbackSearchUrl;
         const confidenceMarkup =
           !isSource && Number.isFinite(siteMatch?.confidence)
             ? `<span class="provider-confidence ${escapeHtml(classifyConfidenceTone(siteMatch?.confidence))}">${escapeHtml(
@@ -1065,7 +1135,7 @@
         return `
           <${boxTag} class="price-box ${providerProductUrl ? "price-box--link" : ""}" data-provider-site="${escapeHtml(site)}"${boxLinkAttributes}>
             <div class="price-main">
-              <span class="price-value">${escapeHtml(priceText)}</span>
+              <span class="price-value ${isLoadingPrice ? "price-value--loading" : ""}">${priceMarkup}</span>
               <div class="price-meta">
                 ${confidenceMarkup}
                 ${buildPriceSiteBadgeMarkup(language, siteLabel, siteIcon)}
@@ -1511,6 +1581,10 @@
     return `<svg class="action-symbol action-symbol--reload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>`;
   }
 
+  function buildLoadingInlineMarkup(label) {
+    return `<span class="loading-inline"><span class="loading-spinner" aria-hidden="true"></span><span>${escapeHtml(label)}</span></span>`;
+  }
+
   function buildSettingsIconMarkup() {
     return `<svg class="icon-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.05.05a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.05-.05a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.08a1.65 1.65 0 0 0-1.08-1.54 1.65 1.65 0 0 0-1.82.33l-.05.05a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.05-.05A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.08a1.65 1.65 0 0 0 1.54-1.08 1.65 1.65 0 0 0-.33-1.82l-.05-.05a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.05.05a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.08a1.65 1.65 0 0 0 1.08 1.54 1.65 1.65 0 0 0 1.82-.33l.05-.05a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.05.05A1.65 1.65 0 0 0 19.4 9c.2.48.67.8 1.2.82H21a2 2 0 0 1 0 4h-.08a1.65 1.65 0 0 0-1.52 1.18z"></path></svg>`;
   }
@@ -1630,7 +1704,7 @@
       return;
     }
     const enabledPredicate = section === "price" ? isProviderPriceVisible : isProviderSearchEnabled;
-    const activeProviders = getAllProviderSites().filter((site) => enabledPredicate(state, site));
+    const activeProviders = getProviderSitesForSection(section).filter((site) => enabledPredicate(state, site));
     if (!activeProviders.length) {
       host.innerHTML = `<span class="provider-chip provider-chip--empty">${escapeHtml(
         TRANSLATIONS[language].providerNoActive
@@ -1642,8 +1716,8 @@
       .join("");
   }
 
-  function getAllProviderSites() {
-    return ALL_PROVIDER_SITES.slice();
+  function getProviderSitesForSection(section) {
+    return (section === "price" ? PRICE_PROVIDER_SITES : SEARCH_PROVIDER_SITES).slice();
   }
 
   function isProviderSearchEnabled(state, site) {
@@ -1690,48 +1764,12 @@
   }
 
   function siteLabelFor(site, language) {
-    const isEnglish = language === "en";
-    if (site === "digikala") {
-      return isEnglish ? "Digikala" : "دیجیکالا";
-    }
-    if (site === "torob") {
-      return isEnglish ? "Torob" : "ترب";
-    }
-    if (site === "technolife") {
-      return isEnglish ? "Technolife" : "تکنولایف";
-    }
-    if (site === "emalls") {
-      return isEnglish ? "Emalls" : "ایمالز";
-    }
-    if (site === "amazon") {
-      return isEnglish ? "Amazon" : "آمازون";
-    }
-    if (site === "ebay") {
-      return isEnglish ? "eBay" : "ای‌بِی";
-    }
-    return isEnglish ? "Unknown" : "نامشخص";
+    return globalThis.RashnuNormalize.getSiteLabel(site, language);
   }
 
   function siteIconFor(site) {
-    if (site === "digikala") {
-      return extensionAssetUrl("assets/site-icons/digikala-192.png");
-    }
-    if (site === "torob") {
-      return extensionAssetUrl("assets/site-icons/torob-192.png");
-    }
-    if (site === "technolife") {
-      return extensionAssetUrl("assets/site-icons/technolife-192.png");
-    }
-    if (site === "emalls") {
-      return extensionAssetUrl("assets/site-icons/emalls.svg");
-    }
-    if (site === "amazon") {
-      return extensionAssetUrl("assets/site-icons/amazon.svg");
-    }
-    if (site === "ebay") {
-      return extensionAssetUrl("assets/site-icons/ebay.svg");
-    }
-    return "";
+    const iconPath = globalThis.RashnuNormalize.getProviderIconPath(site);
+    return iconPath ? extensionAssetUrl(iconPath) : "";
   }
 
   function inferTargetSiteForPage(page, state) {
@@ -1779,11 +1817,15 @@
   }
 
   function getProviderOrderForSource(sourceSite) {
-    const allProviders = getAllProviderSites();
-    if (!allProviders.includes(sourceSite)) {
-      return allProviders;
-    }
-    return allProviders.filter((site) => site !== sourceSite);
+    return globalThis.RashnuNormalize.getTargetSitesForSource(sourceSite);
+  }
+
+  function getSearchButtonOrderForSource(sourceSite) {
+    return globalThis.RashnuNormalize.getSearchButtonSitesForSource(sourceSite);
+  }
+
+  function getPriceProviderOrderForSource(sourceSite) {
+    return globalThis.RashnuNormalize.getPriceVisibilityProviderSites().filter((site) => site !== sourceSite);
   }
 
   function buildTargetSearchUrl(site, query) {
@@ -1796,11 +1838,17 @@
     if (site === "emalls") {
       return globalThis.RashnuNormalize.buildEmallsSearchUrl(query);
     }
+    if (site === "divar") {
+      return globalThis.RashnuNormalize.buildDivarSearchUrl(query, currentState?.divarLocation?.slug || "tehran");
+    }
     if (site === "amazon") {
       return globalThis.RashnuNormalize.buildAmazonSearchUrl(query);
     }
     if (site === "ebay") {
       return globalThis.RashnuNormalize.buildEbaySearchUrl(query);
+    }
+    if (site === "basalam") {
+      return globalThis.RashnuNormalize.buildBasalamSearchUrl(query);
     }
     return globalThis.RashnuNormalize.buildTorobSearchUrl(query);
   }
@@ -1838,6 +1886,64 @@
       return globalThis.CSS.escape(value);
     }
     return String(value || "").replace(/"/g, '\\"');
+  }
+
+  function getPanelScrollStateKey(state) {
+    const tabId = state?.activeTabId;
+    const page = state?.page;
+    if (tabId == null || !page?.pageUrl) {
+      return "";
+    }
+    return `${tabId}|${page.pageUrl}|${page.mode || "unsupported"}`;
+  }
+
+  function rememberPanelScrollPosition(state) {
+    const key = getPanelScrollStateKey(state);
+    if (!key) {
+      return;
+    }
+    panelScrollPositions.set(key, itemsList.scrollTop);
+  }
+
+  function getSavedPanelScrollPosition(state) {
+    const key = getPanelScrollStateKey(state);
+    if (!key) {
+      return null;
+    }
+    const saved = panelScrollPositions.get(key);
+    return Number.isFinite(saved) ? saved : null;
+  }
+
+  function restorePanelScrollPosition(savedScrollTop) {
+    if (!Number.isFinite(savedScrollTop)) {
+      return;
+    }
+    itemsList.scrollTop = savedScrollTop;
+  }
+
+  function renderDivarLocationSelector(state, translation) {
+    if (!divarLocationSelect) {
+      return;
+    }
+    const options = Array.isArray(state?.divarLocationOptions) ? state.divarLocationOptions : [];
+    const selected = String(state?.divarLocation?.id || "");
+    divarLocationSelect.disabled = options.length <= 1;
+    divarLocationSelect.innerHTML = options.length
+      ? options.map((option) => `
+          <option value="${escapeHtml(String(option.id))}" ${String(option.id) === selected ? "selected" : ""}>
+            ${escapeHtml(option.name || translation.divarLocationLoading)}
+          </option>
+        `).join("")
+      : `<option value="">${escapeHtml(translation.divarLocationLoading)}</option>`;
+  }
+
+  function getSelectedDivarLocation(state, idValue) {
+    const options = Array.isArray(state?.divarLocationOptions) ? state.divarLocationOptions : [];
+    const targetId = Number.parseInt(idValue, 10);
+    if (!Number.isFinite(targetId)) {
+      return null;
+    }
+    return options.find((option) => Number(option?.id) === targetId) || null;
   }
 
 })();

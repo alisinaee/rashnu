@@ -16,12 +16,13 @@ ensure_artifacts() {
 }
 
 resolve_python() {
-  if command -v python3 >/dev/null 2>&1; then
-    echo python3
+  local python_path
+  if python_path="$(command -v python3 2>/dev/null)"; then
+    echo "$python_path"
     return 0
   fi
-  if command -v python >/dev/null 2>&1; then
-    echo python
+  if python_path="$(command -v python 2>/dev/null)"; then
+    echo "$python_path"
     return 0
   fi
   echo "Python 3 was not found on PATH." >&2

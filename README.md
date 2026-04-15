@@ -4,7 +4,8 @@ Rashnu is a Chrome side-panel extension for comparing prices across shopping pro
 
 ## Features
 
-- Side-panel comparison across Torob, Digikala, Technolife, Emalls, Amazon, and eBay
+- Side-panel comparison across Basalam, Torob, Digikala, Technolife, Emalls, Divar, Amazon, and eBay
+- Divar search-only support with configurable city scope
 - Listing and detail page support
 - Guide numbers on the page and in the panel
 - Element select mode
@@ -23,8 +24,9 @@ Use this when the extension is not from Chrome Web Store.
 4. Select this repository folder (must contain `manifest.json`).
 5. Find **Rashnu** in extension cards.
 6. (Optional) Click the pin icon in Chrome toolbar so Rashnu is always visible.
-7. Open a Digikala, Torob, Technolife, Emalls, Amazon, or eBay page, then open Rashnu from Chrome side panel.
-8. After any local code change, go back to `chrome://extensions` and click `Reload` on the Rashnu card.
+7. Open a Basalam, Digikala, Torob, Technolife, Emalls, Amazon, or eBay page, then open Rashnu from Chrome side panel.
+8. Divar is available as a search-only provider inside Rashnu settings and global search; it is not a supported page-extraction source.
+9. After any local code change, go back to `chrome://extensions` and click `Reload` on the Rashnu card.
 
 ## Development
 
@@ -66,7 +68,7 @@ Windows foreground/manual mode:
 .\run-rashnu-helper.ps1
 ```
 
-After setup, open Digikala, Torob, Technolife, Emalls, Amazon, or eBay pages and use the Rashnu side panel.
+After setup, open Basalam, Digikala, Torob, Technolife, Emalls, Amazon, or eBay pages and use the Rashnu side panel. Use Divar from provider search controls and global search when you need classifieds results.
 
 ## License
 

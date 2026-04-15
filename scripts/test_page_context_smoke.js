@@ -160,6 +160,54 @@ function run() {
   assert.equal(unsupportedContext.mode, "unsupported");
   assert.equal(unsupportedContext.isSupported, false);
 
+  const basalamDetailHarness = createHarness({
+    hostname: "basalam.com",
+    pathname: "/vendor/product/36498124",
+    href: "https://basalam.com/vendor/product/36498124",
+    title: "Basalam Detail",
+    links: []
+  });
+  const basalamDetailContext = basalamDetailHarness.extractor.getPageContext();
+  assert.equal(basalamDetailContext.mode, "detail");
+  assert.equal(basalamDetailContext.isSupported, true);
+
+  const basalamShortDetailHarness = createHarness({
+    hostname: "basalam.com",
+    pathname: "/product/36498124",
+    href: "https://basalam.com/product/36498124",
+    title: "Basalam Short Detail",
+    links: []
+  });
+  const basalamShortDetailContext = basalamShortDetailHarness.extractor.getPageContext();
+  assert.equal(basalamShortDetailContext.mode, "detail");
+  assert.equal(basalamShortDetailContext.isSupported, true);
+
+  const basalamListingHarness = createHarness({
+    hostname: "basalam.com",
+    pathname: "/cat/digital/laptop",
+    href: "https://basalam.com/cat/digital/laptop",
+    title: "Basalam Listing",
+    links: [
+      "/vendor-a/product/1001",
+      "/vendor-b/product/1002",
+      "/vendor-c/product/1003"
+    ]
+  });
+  const basalamListingContext = basalamListingHarness.extractor.getPageContext();
+  assert.equal(basalamListingContext.mode, "listing");
+  assert.equal(basalamListingContext.isSupported, true);
+
+  const basalamThinListingHarness = createHarness({
+    hostname: "basalam.com",
+    pathname: "/landings/special-offers-landing",
+    href: "https://basalam.com/landings/special-offers-landing",
+    title: "Basalam Thin Listing",
+    links: ["/vendor-x/product/5001"]
+  });
+  const basalamThinListingContext = basalamThinListingHarness.extractor.getPageContext();
+  assert.equal(basalamThinListingContext.mode, "listing");
+  assert.equal(basalamThinListingContext.isSupported, true);
+
   console.log("page-context smoke tests passed");
 }
 

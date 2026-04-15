@@ -21,6 +21,44 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   const QUERY_TRANSLATION_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
   const QUERY_TRANSLATION_FAILURE_CACHE_TTL_MS = 5 * 60 * 1000;
   const MARKETPLACE_PROXY_BASE_URL = "https://r.jina.ai/http://";
+  const DIVAR_SEARCH_API_URL = "https://api.divar.ir/v8/postlist/w/search";
+  const DIVAR_FIELDS_SEARCH_API_URL = "https://api.divar.ir/v8/fields-search";
+  const DIVAR_PLACES_URL = "https://map.divarcdn.com/places-web.json";
+  const DIVAR_DEFAULT_LOCATION = {
+    id: 1,
+    slug: "tehran",
+    name: "تهران"
+  };
+  const DIVAR_FALLBACK_LOCATION_QUERIES = [
+    "ایران",
+    "تهران",
+    "کرج",
+    "مشهد",
+    "اصفهان",
+    "شیراز",
+    "تبریز",
+    "اهواز",
+    "قم",
+    "کرمانشاه",
+    "رشت",
+    "ارومیه",
+    "یزد",
+    "بندرعباس",
+    "زاهدان",
+    "کرمان"
+  ];
+  const DIVAR_MATCH_MIN_PRICE = 10000;
+  const DIVAR_MATCH_PRICE_BONUS = 0.12;
+  const DIVAR_MATCH_MISSING_PRICE_PENALTY = 0.42;
+  const DIVAR_MATCH_BARTER_PENALTY = 0.24;
+  const BASALAM_MIN_PARSED_PRICE = 10000;
+  const CONTENT_SCRIPT_FILES = [
+    "src/lib/logger.js",
+    "src/lib/normalize.js",
+    "src/lib/match.js",
+    "src/lib/extract-listing-cards.js",
+    "src/content.js"
+  ];
   const ACTION_ICON_PATHS = {
     inactive: {
       16: "assets/extension-icons/icon-inactive-16.png",
@@ -63,7 +101,12 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     [/نقره(?:‌| )?ای/gu, "silver"],
     [/خاکستری/gu, "gray"]
   ];
-  const PROVIDER_SITES = ["torob", "digikala", "technolife", "emalls", "amazon", "ebay"];
+  const PROVIDER_SITES = globalThis.RashnuNormalize.getTargetProviderSites();
+  const GLOBAL_SEARCH_PROVIDER_SITES = globalThis.RashnuNormalize.getGlobalSearchProviderSites();
+  const SEARCH_BUTTON_PROVIDER_SITES = globalThis.RashnuNormalize.getSearchButtonProviderSites();
+  const PRICE_VISIBLE_PROVIDER_SITES = globalThis.RashnuNormalize.getPriceVisibilityProviderSites();
+  const SOURCE_PAGE_SITES = new Set(globalThis.RashnuNormalize.getSourcePageProviderSites());
+  const BASALAM_SEARCH_RESEARCH_ENABLED = false;
   const GLOBAL_SEARCH_USED_KEYWORDS = [
     "استوک",
     "used",
@@ -81,6 +124,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   const GLOBAL_SEARCH_INCLUDE_SUGGESTION_LIMIT = 10;
   const GLOBAL_SEARCH_EXCLUDE_SUGGESTION_LIMIT = 6;
   const GLOBAL_SEARCH_SUGGESTION_SAMPLE_LIMIT = 18;
+  const DIVAR_LOCATION_KEY = "rashnuDivarLocation";
   const AMAZON_API_CREDENTIALS_KEY = "rashnuAmazonApiCredentials";
   const EBAY_API_CREDENTIALS_KEY = "rashnuEbayApiCredentials";
   const inFlightQueries = new Map();
@@ -108,8 +152,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   let themeMode = "system";
   let amazonApiCredentials = normalizeApiCredentialConfig();
   let ebayApiCredentials = normalizeApiCredentialConfig();
-  let providerSearchEnabled = getDefaultProviderFlags();
-  let providerPriceVisible = getDefaultProviderFlags();
+  let divarLocation = getDefaultDivarLocation();
+  let providerSearchEnabled = getDefaultProviderSearchFlags();
+  let providerPriceVisible = getDefaultProviderPriceFlags();
   let logFlushTimer = null;
   let logPersistTimer = null;
   let logPersistPending = false;
@@ -126,6 +171,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     value: null,
     expiresAt: 0
   };
+  let divarLocationOptionsCache = null;
+  let divarLocationOptionsPromise = null;
   let logHelperStatus = {
     connected: false,
     lastCheckedAt: null,
@@ -134,7 +181,6 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     logPath: "research/artifacts/rashnu/rashnu-live-log.ndjson",
     statePath: "research/artifacts/rashnu/rashnu-state.json"
   };
-
   initialize().catch(() => {});
 
   async function initialize() {
@@ -168,6 +214,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       "rashnuPanelActive",
       "rashnuProviderSearchEnabled",
       "rashnuProviderPriceVisible",
+      DIVAR_LOCATION_KEY,
       AMAZON_API_CREDENTIALS_KEY,
       EBAY_API_CREDENTIALS_KEY
     ]);
@@ -185,8 +232,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     panelActive = Boolean(stored.rashnuPanelActive);
     amazonApiCredentials = normalizeApiCredentialConfig(stored[AMAZON_API_CREDENTIALS_KEY]);
     ebayApiCredentials = normalizeApiCredentialConfig(stored[EBAY_API_CREDENTIALS_KEY]);
-    providerSearchEnabled = normalizeProviderFlags(stored.rashnuProviderSearchEnabled);
-    providerPriceVisible = normalizeProviderFlags(stored.rashnuProviderPriceVisible);
+    divarLocation = normalizeDivarLocation(stored[DIVAR_LOCATION_KEY]);
+    providerSearchEnabled = normalizeProviderFlags(stored.rashnuProviderSearchEnabled, getDefaultProviderSearchFlags());
+    providerPriceVisible = normalizeProviderFlags(stored.rashnuProviderPriceVisible, getDefaultProviderPriceFlags());
   }
 
   async function loadLogs() {
@@ -269,12 +317,24 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     if (Object.prototype.hasOwnProperty.call(changes, EBAY_API_CREDENTIALS_KEY)) {
       ebayApiCredentials = normalizeApiCredentialConfig(changes[EBAY_API_CREDENTIALS_KEY].newValue);
     }
+    if (Object.prototype.hasOwnProperty.call(changes, DIVAR_LOCATION_KEY)) {
+      divarLocation = normalizeDivarLocation(changes[DIVAR_LOCATION_KEY].newValue);
+      clearAllMatchCaches();
+      refreshMatchesForEnabledProviders().catch(() => {});
+      notifyPanels();
+    }
     if (Object.prototype.hasOwnProperty.call(changes, "rashnuProviderSearchEnabled")) {
-      providerSearchEnabled = normalizeProviderFlags(changes.rashnuProviderSearchEnabled.newValue);
+      providerSearchEnabled = normalizeProviderFlags(
+        changes.rashnuProviderSearchEnabled.newValue,
+        getDefaultProviderSearchFlags()
+      );
       notifyPanels();
     }
     if (Object.prototype.hasOwnProperty.call(changes, "rashnuProviderPriceVisible")) {
-      providerPriceVisible = normalizeProviderFlags(changes.rashnuProviderPriceVisible.newValue);
+      providerPriceVisible = normalizeProviderFlags(
+        changes.rashnuProviderPriceVisible.newValue,
+        getDefaultProviderPriceFlags()
+      );
       notifyPanels();
     }
   });
@@ -561,8 +621,28 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
 
+    if (message.type === "RASHNU_GET_DIVAR_LOCATIONS") {
+      getDivarLocationsState().then(sendResponse);
+      return true;
+    }
+
+    if (message.type === "RASHNU_SET_DIVAR_LOCATION") {
+      const nextLocation = normalizeDivarLocation(message.payload?.location);
+      divarLocation = nextLocation;
+      clearAllMatchCaches();
+      chrome.storage.local.set({
+        [DIVAR_LOCATION_KEY]: nextLocation
+      });
+      notifyPanels();
+      sendResponse({
+        ok: true,
+        location: nextLocation
+      });
+      return false;
+    }
+
     if (message.type === "RASHNU_SET_PROVIDER_SEARCH") {
-      const provider = normalizeProviderSite(message.payload?.provider);
+      const provider = normalizeSearchButtonProviderSite(message.payload?.provider);
       if (!provider) {
         sendResponse({ ok: false, reason: "invalid_provider" });
         return false;
@@ -581,7 +661,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
 
     if (message.type === "RASHNU_SET_PROVIDER_PRICE") {
-      const provider = normalizeProviderSite(message.payload?.provider);
+      const provider = normalizePriceVisibleProviderSite(message.payload?.provider);
       if (!provider) {
         sendResponse({ ok: false, reason: "invalid_provider" });
         return false;
@@ -802,6 +882,11 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return true;
     }
 
+    if (message.type === "RASHNU_RELOAD_EXTENSION") {
+      reloadExtensionFromPanel(message.payload || {}).then(sendResponse);
+      return true;
+    }
+
     if (message.type === "RASHNU_RELOAD_ITEM") {
       reloadSingleForActiveTab(message.payload?.sourceId).then(sendResponse);
       return true;
@@ -869,26 +954,68 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   function inferSiteFromUrl(url) {
     try {
       const hostname = new URL(String(url || "")).hostname.toLowerCase();
-      if (hostname.includes("digikala.com")) {
-        return "digikala";
-      }
-      if (hostname.includes("torob.com")) {
-        return "torob";
-      }
-      if (hostname.includes("technolife.com")) {
-        return "technolife";
-      }
-      if (hostname.includes("emalls.ir")) {
-        return "emalls";
-      }
-      if (hostname.includes("amazon.")) {
-        return "amazon";
-      }
-      if (hostname.includes("ebay.")) {
-        return "ebay";
+      for (const provider of globalThis.RashnuNormalize.getProviderRegistry()) {
+        const patterns = Array.isArray(provider?.hostPatterns) ? provider.hostPatterns : [];
+        if (patterns.some((pattern) => hostname.includes(pattern))) {
+          return provider.id;
+        }
       }
     } catch (_error) {}
     return "unsupported";
+  }
+
+  function canRescanSite(site) {
+    return SOURCE_PAGE_SITES.has(site);
+  }
+
+  function isRecoverableContentScriptMessageError(error) {
+    const message = String(error?.message || error || "").toLowerCase();
+    return message.includes("receiving end does not exist") ||
+      message.includes("could not establish connection") ||
+      message.includes("context invalidated");
+  }
+
+  async function ensureContentScriptsInjected(tabId, site) {
+    if (!canRescanSite(site)) {
+      return false;
+    }
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: CONTENT_SCRIPT_FILES
+      });
+      addLog("info", "background", "content_scripts_injected", {
+        tabId,
+        site
+      });
+      return true;
+    } catch (error) {
+      addLog("warn", "background", "content_scripts_injection_failed", {
+        tabId,
+        site,
+        error: serializeError(error)
+      });
+      return false;
+    }
+  }
+
+  async function sendTabMessageWithContentScriptRecovery(tabId, site, message, logPrefix) {
+    try {
+      return await chrome.tabs.sendMessage(tabId, message);
+    } catch (error) {
+      if (!isRecoverableContentScriptMessageError(error)) {
+        throw error;
+      }
+      const injected = await ensureContentScriptsInjected(tabId, site);
+      if (!injected) {
+        throw error;
+      }
+      addLog("info", "background", `${logPrefix}_retried_after_injection`, {
+        tabId,
+        site
+      });
+      return chrome.tabs.sendMessage(tabId, message);
+    }
   }
 
   function canonicalizeTrackedUrl(url) {
@@ -1509,11 +1636,13 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   }
 
   function normalizeGlobalSearchProviders(value) {
-    const input = Array.isArray(value) ? value : PROVIDER_SITES;
+    const input = Array.isArray(value) ? value : GLOBAL_SEARCH_PROVIDER_SITES;
     const seen = new Set();
     const output = [];
     for (const site of input) {
-      const normalized = normalizeProviderSite(site);
+      const normalized = globalThis.RashnuNormalize.isGlobalSearchProviderSite(site)
+        ? String(site || "").trim().toLowerCase()
+        : null;
       if (!normalized || seen.has(normalized)) {
         continue;
       }
@@ -1595,10 +1724,13 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       return false;
     }
     const hasUsedTerm = hasUsedConditionTerm(comparableTitle);
-    if (controls.conditionFilter === "used_only" && !hasUsedTerm) {
+    const conditionStatus = normalizeCandidateConditionStatus(candidate?.conditionStatus);
+    const isUsed = conditionStatus ? conditionStatus === "used" : hasUsedTerm;
+    const isNew = conditionStatus ? conditionStatus === "new" : !hasUsedTerm;
+    if (controls.conditionFilter === "used_only" && !isUsed) {
       return false;
     }
-    if (controls.conditionFilter === "new_only" && hasUsedTerm) {
+    if (controls.conditionFilter === "new_only" && !isNew) {
       return false;
     }
     return true;
@@ -1697,6 +1829,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       "digikala",
       "technolife",
       "emalls",
+      "divar",
       "amazon",
       "ebay"
     ]);
@@ -2188,11 +2321,17 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     if (provider === "emalls") {
       return fetchEmallsGlobalSearch(query, maxResults, controls);
     }
+    if (provider === "divar") {
+      return fetchDivarGlobalSearch(query, maxResults, controls);
+    }
     if (provider === "amazon") {
       return fetchAmazonGlobalSearch(query, maxResults, controls);
     }
     if (provider === "ebay") {
       return fetchEbayGlobalSearch(query, maxResults, controls);
+    }
+    if (provider === "basalam") {
+      return fetchBasalamGlobalSearch(query, maxResults, controls);
     }
     throw new Error(`unsupported_provider:${provider}`);
   }
@@ -2297,6 +2436,27 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         throw error;
       }
       return buildGlobalSearchErrorResponse("emalls", query, "network_unreachable");
+    }
+  }
+
+  async function fetchDivarGlobalSearch(query, maxResults, controls) {
+    const probeItem = buildGlobalSearchProbeItem(query);
+    try {
+      const payload = await fetchDivarSearchPayload(query);
+      const ranked = globalThis.RashnuMatch.rankCandidates(
+        probeItem,
+        extractDivarSearchCandidates(payload).slice(0, 24)
+      );
+      return buildGlobalSearchProviderResponse("divar", query, ranked, {
+        searchUrl: buildSearchUrlForSite("divar", query),
+        maxResults,
+        controls
+      });
+    } catch (error) {
+      if (!isRecoverableProviderFetchError(error)) {
+        throw error;
+      }
+      return buildGlobalSearchErrorResponse("divar", query, "network_unreachable");
     }
   }
 
@@ -2405,6 +2565,54 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         throw error;
       }
       return buildGlobalSearchErrorResponse("ebay", query, "network_unreachable", searchUrl);
+    }
+  }
+
+  async function fetchBasalamGlobalSearch(query, maxResults, controls) {
+    const probeItem = buildGlobalSearchProbeItem(query);
+    const searchUrl = buildSearchUrlForSite("basalam", query);
+    let directCandidates = [];
+    let proxyCandidates = [];
+    try {
+      try {
+        const html = await fetchTextWithRetry(searchUrl, {
+          headers: {
+            "accept-language": "fa-IR,fa;q=0.9,en;q=0.8"
+          }
+        });
+        directCandidates = extractBasalamSearchCandidatesFromHtml(html).slice(0, 24);
+      } catch (directError) {
+        if (!isRecoverableProviderFetchError(directError)) {
+          throw directError;
+        }
+      }
+
+      if (!directCandidates.length) {
+        try {
+          const proxyText = await fetchMarketplaceProxyText(searchUrl, "basalam");
+          proxyCandidates = extractBasalamSearchCandidatesFromMarkdown(proxyText).slice(0, 24);
+        } catch (proxyError) {
+          if (!isRecoverableProviderFetchError(proxyError)) {
+            throw proxyError;
+          }
+        }
+      }
+
+      const ranked = globalThis.RashnuMatch.rankCandidates(
+        probeItem,
+        (directCandidates.length ? directCandidates : proxyCandidates).slice(0, 18)
+      );
+      return buildGlobalSearchProviderResponse("basalam", query, ranked, {
+        searchUrl,
+        reason: ranked.length ? null : "no_results",
+        maxResults,
+        controls
+      });
+    } catch (error) {
+      if (!isRecoverableProviderFetchError(error)) {
+        throw error;
+      }
+      return buildGlobalSearchErrorResponse("basalam", query, "network_unreachable", searchUrl);
     }
   }
 
@@ -2600,6 +2808,73 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         reason: error?.message || "request_failed"
       });
       return buildProviderSearchFallbackResult(item, query, "emalls", "network_unreachable");
+    }
+  }
+
+  async function fetchDivarMatch(item, query) {
+    const startedAt = Date.now();
+    try {
+      const payload = await fetchDivarSearchPayload(query);
+      const candidates = extractDivarSearchCandidates(payload).slice(0, 24);
+      if (!candidates.length) {
+        return buildProviderSearchFallbackResult(item, query, "divar", "no_results");
+      }
+
+      const ranked = globalThis.RashnuMatch.rankCandidates(item, candidates).map((candidate) => ({
+        ...candidate,
+        divarMatchScore: scoreDivarPrimaryCandidate(candidate)
+      }));
+      ranked.sort((left, right) => Number(right.divarMatchScore || 0) - Number(left.divarMatchScore || 0));
+      const classification = globalThis.RashnuMatch.classifyTopCandidate(ranked);
+      const top = ranked[0] || null;
+      const topWithPrice = ranked.find((candidate) => isDivarPriceReadyCandidate(candidate)) || top;
+      const targetPriceValue =
+        topWithPrice?.price ??
+        topWithPrice?.priceValue ??
+        globalThis.RashnuNormalize.parsePriceValue(topWithPrice?.priceText || "");
+
+      return {
+        sourceSite: item.sourceSite,
+        targetSite: "divar",
+        query,
+        status: classification.status,
+        confidence: top?.confidence ?? 0,
+        matchedTitle: top?.title || null,
+        targetPriceText: topWithPrice?.priceText || null,
+        targetPriceValue: Number.isFinite(targetPriceValue) ? targetPriceValue : null,
+        targetOriginalPriceText: null,
+        targetOriginalPriceValue: null,
+        targetDiscountPercent: null,
+        targetUrl: top?.targetUrl || buildSearchUrlForSite("divar", query),
+        moreInfoUrl: null,
+        sellerCount: null,
+        reason: classification.reason,
+        searchUrl: buildSearchUrlForSite("divar", query),
+        googleUrl: globalThis.RashnuNormalize.buildGoogleSearchUrl(item.title),
+        debug: debugEnabled
+          ? {
+              requestDurationMs: Date.now() - startedAt,
+              topCandidates: ranked.slice(0, 5).map((candidate) => ({
+                ...serializeCandidateDebug(candidate),
+                conditionStatus: candidate?.conditionStatus || null,
+                locationText: candidate?.locationText || null,
+                divarMatchScore: candidate?.divarMatchScore ?? null
+              })),
+              sourceItem: item
+            }
+          : null
+      };
+    } catch (error) {
+      if (!isRecoverableProviderFetchError(error)) {
+        throw error;
+      }
+      addLog("warn", "background", "provider_search_fallback", {
+        sourceId: item.sourceId,
+        targetSite: "divar",
+        query,
+        reason: error?.message || "request_failed"
+      });
+      return buildProviderSearchFallbackResult(item, query, "divar", "network_unreachable");
     }
   }
 
@@ -2839,6 +3114,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     if (targetSite === "emalls") {
       return fetchEmallsMatch(item, query);
     }
+    if (targetSite === "divar") {
+      return fetchDivarMatch(item, query);
+    }
     if (targetSite === "amazon") {
       return fetchAmazonMatch(item, query);
     }
@@ -3006,6 +3284,43 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       targetSite: "emalls",
       targetUrl,
       site: "emalls"
+    };
+  }
+
+  function extractDivarSearchCandidates(payload) {
+    const widgets = Array.isArray(payload?.list_widgets) ? payload.list_widgets : [];
+    return widgets
+      .filter((widget) => widget?.widget_type === "POST_ROW")
+      .map(normalizeDivarCandidate)
+      .filter((candidate) => candidate?.title && candidate?.targetUrl);
+  }
+
+  function normalizeDivarCandidate(widget) {
+    const data = widget?.data && typeof widget.data === "object" ? widget.data : {};
+    const title = globalThis.RashnuNormalize.cleanProductTitle(data.title || "");
+    const token = String(data?.token || data?.action?.payload?.token || "").trim();
+    const priceText = normalizeDivarPriceText(data.middle_description_text || "");
+    const priceValue = globalThis.RashnuNormalize.parsePriceValue(priceText || "");
+    const conditionText = globalThis.RashnuNormalize.normalizeWhitespace(data.top_description_text || "");
+    const conditionStatus = inferDivarConditionStatus(conditionText);
+    const bottomDescription = globalThis.RashnuNormalize.normalizeWhitespace(data.bottom_description_text || "");
+    const cityText = globalThis.RashnuNormalize.normalizeWhitespace(
+      widget?.web_info?.city_persian || widget?.web_info?.district_persian || ""
+    );
+    const locationText = [bottomDescription, cityText].filter(Boolean).join(" · ");
+    return {
+      title,
+      price: Number.isFinite(priceValue) ? priceValue : null,
+      priceValue: Number.isFinite(priceValue) ? priceValue : null,
+      priceText: priceText || null,
+      imageUrl: normalizeGlobalSearchImageUrl(data.image_url || ""),
+      targetSite: "divar",
+      targetUrl: token ? `https://divar.ir/v/-/${encodeURIComponent(token)}` : buildSearchUrlForSite("divar", title),
+      site: "divar",
+      token: token || null,
+      conditionText: conditionText || null,
+      conditionStatus,
+      locationText: locationText || null
     };
   }
 
@@ -3189,6 +3504,203 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       });
     }
     return candidates;
+  }
+
+  function extractBasalamSearchCandidatesFromHtml(html) {
+    const text = String(html || "");
+    if (!text) {
+      return [];
+    }
+
+    const candidatesByKey = new Map();
+    const linkRegex = /<a[^>]*href="([^"]*\/[^/"\s]+\/product\/\d+[^"]*)"[^>]*>([\s\S]{0,2600}?)<\/a>/gi;
+    let match;
+    while ((match = linkRegex.exec(text)) && candidatesByKey.size < 48) {
+      const targetUrl = globalThis.RashnuNormalize.canonicalizeUrl(decodeHtmlEntities(match[1] || ""), "https://basalam.com");
+      if (!targetUrl) {
+        continue;
+      }
+      const blockText = sanitizeHtmlText(match[2] || "");
+      const title = extractBasalamTitleFromText(blockText);
+      if (!title) {
+        continue;
+      }
+      const context = text.slice(Math.max(0, match.index), Math.min(text.length, match.index + 3600));
+      const priceText = extractBasalamPriceText(`${blockText} ${sanitizeHtmlText(context)}`);
+      const imageMatch = context.match(/<img[^>]*src="([^"]+)"/i);
+      const imageUrl = normalizeGlobalSearchImageUrl(decodeHtmlEntities(imageMatch?.[1] || ""));
+      const candidate = buildBasalamSearchCandidate({
+        title,
+        priceText,
+        targetUrl,
+        imageUrl
+      });
+      upsertBasalamSearchCandidate(candidatesByKey, candidate);
+    }
+
+    return Array.from(candidatesByKey.values()).slice(0, 24);
+  }
+
+  function extractBasalamSearchCandidatesFromMarkdown(markdown) {
+    const text = String(markdown || "");
+    if (!text) {
+      return [];
+    }
+
+    const candidatesByKey = new Map();
+
+    const productCardRegex =
+      /\[!\[Image\s*\d+:\s*([^\]]+)\]\((https?:\/\/[^)\s]+)\)\s*##\s*([\s\S]{0,520}?)\]\((https?:\/\/(?:www\.)?basalam\.com\/[^)\s]+\/product\/\d+[^)\s]*)\)/gi;
+    let productCardMatch;
+    while ((productCardMatch = productCardRegex.exec(text)) && candidatesByKey.size < 48) {
+      const imageTitle = sanitizeMarkdownText(productCardMatch[1] || "");
+      const imageUrl = normalizeGlobalSearchImageUrl(productCardMatch[2] || "");
+      const detailsText = sanitizeMarkdownText(productCardMatch[3] || "");
+      const targetUrl = globalThis.RashnuNormalize.canonicalizeUrl(productCardMatch[4] || "", "https://basalam.com");
+      const title = extractBasalamTitleFromText(imageTitle, detailsText);
+      const priceText = extractBasalamPriceText(detailsText);
+      const candidate = buildBasalamSearchCandidate({
+        title,
+        priceText,
+        targetUrl,
+        imageUrl
+      });
+      upsertBasalamSearchCandidate(candidatesByKey, candidate);
+    }
+
+    const genericLinkRegex =
+      /\[([\s\S]{1,800}?)\]\((https?:\/\/(?:www\.)?basalam\.com\/[^)\s]+\/product\/\d+[^)\s]*)\)/gi;
+    let genericMatch;
+    while ((genericMatch = genericLinkRegex.exec(text)) && candidatesByKey.size < 48) {
+      const label = sanitizeMarkdownText(genericMatch[1] || "");
+      const targetUrl = globalThis.RashnuNormalize.canonicalizeUrl(genericMatch[2] || "", "https://basalam.com");
+      const title = extractBasalamTitleFromText(label);
+      if (!title) {
+        continue;
+      }
+      const priceText = extractBasalamPriceText(label);
+      const imageUrl = extractBasalamImageFromMarkdownLabel(genericMatch[1] || "");
+      const candidate = buildBasalamSearchCandidate({
+        title,
+        priceText,
+        targetUrl,
+        imageUrl
+      });
+      upsertBasalamSearchCandidate(candidatesByKey, candidate);
+    }
+
+    return Array.from(candidatesByKey.values()).slice(0, 24);
+  }
+
+  function extractBasalamImageFromMarkdownLabel(label) {
+    const match = String(label || "").match(/!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/i);
+    return normalizeGlobalSearchImageUrl(match?.[1] || "");
+  }
+
+  function extractBasalamTitleFromText(value, fallbackValue = "") {
+    const source = sanitizeMarkdownText(String(value || fallbackValue || ""));
+    if (!source) {
+      return "";
+    }
+    let title = source
+      .replace(/^.*?Image\s*\d+\s*:\s*/i, "")
+      .replace(/\s*##\s*/g, " ")
+      .replace(/^(?:آگهی|تخفیف\s+هیجان[‌\s-]*انگیز|چند\s+غرفه)\s*/iu, "")
+      .trim();
+
+    const separatorIndex = title.indexOf("|");
+    if (separatorIndex > 0) {
+      title = title.slice(0, separatorIndex).trim();
+    }
+
+    const priceMatches = Array.from(title.matchAll(/([۰-۹0-9][۰-۹0-9٬,٫.\s]{2,}(?:\s*(?:تومان|ریال))?)/gu));
+    for (const priceMatch of priceMatches) {
+      const priceValue = globalThis.RashnuNormalize.parsePriceValue(priceMatch[1] || "");
+      if (
+        Number.isFinite(priceValue) &&
+        priceValue >= BASALAM_MIN_PARSED_PRICE &&
+        Number.isFinite(priceMatch.index)
+      ) {
+        title = title.slice(0, priceMatch.index).trim();
+        break;
+      }
+    }
+
+    return globalThis.RashnuNormalize.cleanProductTitle(title);
+  }
+
+  function extractBasalamPriceText(value) {
+    const normalized = sanitizeMarkdownText(String(value || "").replace(/[%٪]\s*[۰-۹0-9]+/gu, " "));
+    if (!normalized) {
+      return null;
+    }
+    const priceMatches = Array.from(
+      normalized.matchAll(/([۰-۹0-9][۰-۹0-9٬,٫.\s]{2,}(?:\s*(?:تومان|ریال))?)/gu)
+    )
+      .map((match) => globalThis.RashnuNormalize.normalizeWhitespace(match[1] || ""))
+      .filter(Boolean);
+    if (!priceMatches.length) {
+      return null;
+    }
+
+    let selected = null;
+    for (const candidate of priceMatches) {
+      const value = globalThis.RashnuNormalize.parsePriceValue(candidate);
+      if (Number.isFinite(value) && value >= BASALAM_MIN_PARSED_PRICE) {
+        selected = candidate;
+      }
+    }
+    return selected || null;
+  }
+
+  function buildBasalamSearchCandidate(candidate) {
+    const targetUrl = globalThis.RashnuNormalize.canonicalizeUrl(candidate?.targetUrl || "", "https://basalam.com");
+    const title = globalThis.RashnuNormalize.cleanProductTitle(candidate?.title || "");
+    if (!targetUrl || !title) {
+      return null;
+    }
+    const priceText = globalThis.RashnuNormalize.normalizeWhitespace(candidate?.priceText || "");
+    const priceValue = globalThis.RashnuNormalize.parsePriceValue(priceText || "");
+    return {
+      title,
+      priceText: priceText || null,
+      price: Number.isFinite(priceValue) ? priceValue : null,
+      targetSite: "basalam",
+      targetUrl,
+      imageUrl: normalizeGlobalSearchImageUrl(candidate?.imageUrl || ""),
+      site: "basalam"
+    };
+  }
+
+  function upsertBasalamSearchCandidate(candidatesByKey, candidate) {
+    if (!candidate || !candidate.targetUrl || !candidate.title) {
+      return;
+    }
+    const key = extractBasalamResultKey(candidate.targetUrl) || `${candidate.targetUrl}|${candidate.title.toLowerCase()}`;
+    const existing = candidatesByKey.get(key);
+    if (!existing) {
+      candidatesByKey.set(key, candidate);
+      return;
+    }
+    if (!existing.priceText && candidate.priceText) {
+      existing.priceText = candidate.priceText;
+      existing.price = candidate.price;
+    }
+    if (!existing.imageUrl && candidate.imageUrl) {
+      existing.imageUrl = candidate.imageUrl;
+    }
+  }
+
+  function extractBasalamResultKey(url) {
+    const normalized = globalThis.RashnuNormalize.canonicalizeUrl(url || "", "https://basalam.com");
+    if (!normalized) {
+      return null;
+    }
+    const segments = globalThis.RashnuNormalize.extractBasalamProductSegments(normalized);
+    if (segments?.vendorSlug && segments?.productId) {
+      return `basalam:${segments.vendorSlug}:${segments.productId}`;
+    }
+    return normalized.replace(/^https?:\/\/(?:www\.)?/i, "").toLowerCase();
   }
 
   async function fetchMarketplaceProxyText(searchUrl, targetSite) {
@@ -3638,10 +4150,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   }
 
   function getTargetSites(sourceSite) {
-    if (!PROVIDER_SITES.includes(sourceSite)) {
-      return [];
-    }
-    return PROVIDER_SITES.filter((site) => site !== sourceSite);
+    return globalThis.RashnuNormalize.getTargetSitesForSource(sourceSite);
   }
 
   function getEnabledTargetSitesForSource(sourceSite) {
@@ -3653,22 +4162,28 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     return PROVIDER_SITES.includes(normalized) ? normalized : null;
   }
 
-  function getDefaultProviderFlags() {
-    return {
-      torob: true,
-      digikala: true,
-      technolife: true,
-      emalls: true,
-      amazon: true,
-      ebay: true
-    };
+  function normalizeSearchButtonProviderSite(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    return SEARCH_BUTTON_PROVIDER_SITES.includes(normalized) ? normalized : null;
   }
 
-  function normalizeProviderFlags(value) {
-    const defaults = getDefaultProviderFlags();
+  function normalizePriceVisibleProviderSite(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    return PRICE_VISIBLE_PROVIDER_SITES.includes(normalized) ? normalized : null;
+  }
+
+  function getDefaultProviderSearchFlags() {
+    return globalThis.RashnuNormalize.buildDefaultProviderSearchFlags();
+  }
+
+  function getDefaultProviderPriceFlags() {
+    return globalThis.RashnuNormalize.buildDefaultProviderPriceFlags();
+  }
+
+  function normalizeProviderFlags(value, defaults = getDefaultProviderSearchFlags()) {
     const input = value && typeof value === "object" ? value : {};
     const output = {};
-    for (const site of PROVIDER_SITES) {
+    for (const site of Object.keys(defaults)) {
       output[site] =
         Object.prototype.hasOwnProperty.call(input, site) ? Boolean(input[site]) : defaults[site];
     }
@@ -3685,11 +4200,17 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     if (site === "emalls") {
       return globalThis.RashnuNormalize.buildEmallsSearchUrl(query);
     }
+    if (site === "divar") {
+      return globalThis.RashnuNormalize.buildDivarSearchUrl(query, divarLocation?.slug || DIVAR_DEFAULT_LOCATION.slug);
+    }
     if (site === "amazon") {
       return globalThis.RashnuNormalize.buildAmazonSearchUrl(query);
     }
     if (site === "ebay") {
       return globalThis.RashnuNormalize.buildEbaySearchUrl(query);
+    }
+    if (site === "basalam") {
+      return globalThis.RashnuNormalize.buildBasalamSearchUrl(query);
     }
     return globalThis.RashnuNormalize.buildTorobSearchUrl(query);
   }
@@ -3731,6 +4252,292 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     params.set("cat", "0");
     params.set("entekhab", "Master");
     return params.toString();
+  }
+
+  function getDefaultDivarLocation() {
+    return { ...DIVAR_DEFAULT_LOCATION };
+  }
+
+  function normalizeDivarLocation(value) {
+    const input = value && typeof value === "object" ? value : {};
+    const parsedId = Number.parseInt(input.id, 10);
+    const slug = String(input.slug || input.pathSegment || parsedId || "").trim().toLowerCase();
+    const name = String(input.name || "").trim();
+    if (!Number.isFinite(parsedId) || !name) {
+      return getDefaultDivarLocation();
+    }
+    return {
+      id: parsedId,
+      slug: slug || String(parsedId),
+      name
+    };
+  }
+
+  async function getDivarLocationsState() {
+    const options = await getDivarLocationOptions();
+    return {
+      ok: true,
+      location: normalizeDivarLocation(divarLocation),
+      options
+    };
+  }
+
+  async function getDivarLocationOptions() {
+    if (Array.isArray(divarLocationOptionsCache) && divarLocationOptionsCache.length) {
+      return divarLocationOptionsCache;
+    }
+    if (divarLocationOptionsPromise) {
+      return divarLocationOptionsPromise;
+    }
+    divarLocationOptionsPromise = (async () => {
+      try {
+        const payload = await fetchJsonWithRetry(DIVAR_PLACES_URL);
+        const options = extractDivarLocationOptions(payload);
+        divarLocationOptionsCache = options.length ? options : [getDefaultDivarLocation()];
+        return divarLocationOptionsCache;
+      } catch (error) {
+        const fallbackOptions = await getDivarLocationOptionsFallback();
+        addLog("warn", "background", "divar_locations_failed", {
+          reason: error?.message || "request_failed",
+          fallbackCount: fallbackOptions.length
+        });
+        divarLocationOptionsCache = fallbackOptions.length ? fallbackOptions : [getDefaultDivarLocation()];
+        return divarLocationOptionsCache;
+      } finally {
+        divarLocationOptionsPromise = null;
+      }
+    })();
+    return divarLocationOptionsPromise;
+  }
+
+  async function getDivarLocationOptionsFallback() {
+    try {
+      const responses = await Promise.allSettled(
+        DIVAR_FALLBACK_LOCATION_QUERIES.map((query) => fetchDivarFieldSearchLocations(query))
+      );
+      const options = responses.flatMap((result, index) => {
+        if (result.status !== "fulfilled") {
+          return [];
+        }
+        return extractDivarFieldSearchLocationOptions(result.value, DIVAR_FALLBACK_LOCATION_QUERIES[index]);
+      });
+      return dedupeDivarLocations(options);
+    } catch (error) {
+      addLog("warn", "background", "divar_locations_fallback_failed", {
+        reason: error?.message || "request_failed"
+      });
+      return [getDefaultDivarLocation()];
+    }
+  }
+
+  function extractDivarLocationOptions(payload) {
+    const rows = Array.isArray(payload) ? payload : [];
+    const rowsById = new Map(
+      rows
+        .filter((row) => row && typeof row === "object" && Number.isFinite(Number(row.id)))
+        .map((row) => [Number(row.id), row])
+    );
+    const options = rows
+      .filter((row) => isDivarTopLevelLocation(row, rowsById))
+      .map((row) => normalizeDivarLocation({
+        id: row?.id,
+        slug: row?.slug,
+        name: row?.name
+      }))
+      .filter((row) => row.slug);
+    return dedupeDivarLocations(options);
+  }
+
+  function dedupeDivarLocations(options) {
+    const rows = Array.isArray(options) ? options : [];
+    const seen = new Set();
+    const deduped = [];
+    for (const option of rows) {
+      const normalized = normalizeDivarLocation(option);
+      const key = `${normalized.id}|${normalized.slug}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      deduped.push(normalized);
+    }
+    const defaultLocation = normalizeDivarLocation(divarLocation);
+    if (!deduped.some((option) => option.id === defaultLocation.id)) {
+      deduped.unshift(getDefaultDivarLocation());
+    }
+    return deduped;
+  }
+
+  async function fetchDivarFieldSearchLocations(query) {
+    const payload = await fetchJsonWithRetry(DIVAR_FIELDS_SEARCH_API_URL, {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/plain, */*",
+        "content-type": "application/json",
+        "x-render-type": "CSR"
+      },
+      body: JSON.stringify({
+        field: "cities",
+        q: String(query || "").trim(),
+        source: "filter"
+      })
+    });
+    return Array.isArray(payload?.results) ? payload.results : [];
+  }
+
+  function extractDivarFieldSearchLocationOptions(rows, query) {
+    const normalizedQuery = normalizeDivarFieldSearchName(query);
+    return (Array.isArray(rows) ? rows : [])
+      .filter((row) => {
+        const normalizedName = normalizeDivarFieldSearchName(row?.enumName);
+        return normalizedName === normalizedQuery;
+      })
+      .map((row) => normalizeDivarLocation({
+        id: row?.enum,
+        slug: String(row?.enum || "").trim(),
+        name: row?.enumName
+      }));
+  }
+
+  function normalizeDivarFieldSearchName(value) {
+    return String(value || "")
+      .replace(/[يى]/gu, "ی")
+      .replace(/ك/gu, "ک")
+      .replace(/[\u200c\u200f]/gu, " ")
+      .replace(/\s+/gu, " ")
+      .trim();
+  }
+
+  function isDivarTopLevelLocation(row, rowsById) {
+    if (!row || typeof row !== "object") {
+      return false;
+    }
+    const slug = String(row.slug || "").trim().toLowerCase();
+    const type = String(row.type || "").trim();
+    return slug === "iran" || (type === "2" && isDivarDescendantOfIran(row, rowsById));
+  }
+
+  function isDivarDescendantOfIran(row, rowsById) {
+    const visited = new Set();
+    let current = row;
+    while (current && !visited.has(Number(current.id))) {
+      const currentId = Number(current.id);
+      visited.add(currentId);
+      if (String(current.slug || "").trim().toLowerCase() === "iran" || currentId === 715) {
+        return true;
+      }
+      const parentId = Number(current.parent);
+      if (!Number.isFinite(parentId)) {
+        return false;
+      }
+      current = rowsById.get(parentId) || null;
+    }
+    return false;
+  }
+
+  async function fetchDivarSearchPayload(query) {
+    const location = normalizeDivarLocation(divarLocation);
+    return fetchJsonWithRetry(DIVAR_SEARCH_API_URL, {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/plain, */*",
+        "content-type": "application/json",
+        "x-render-type": "CSR",
+        "x-standard-divar-error": "true"
+      },
+      body: JSON.stringify(buildDivarSearchPayload(query, location))
+    });
+  }
+
+  function buildDivarSearchPayload(query, location) {
+    return {
+      city_ids: [String(location?.id || DIVAR_DEFAULT_LOCATION.id)],
+      source_view: "SEARCH",
+      disable_recommendation: false,
+      search_data: {
+        query
+      },
+      pagination_data: {
+        "@type": "type.googleapis.com/post_list.PaginationData",
+        layer_page: 0,
+        page: 1
+      },
+      server_payload: {
+        "@type": "type.googleapis.com/widgets.SearchData.ServerPayload",
+        additional_form_data: {
+          data: {
+            sort: {
+              str: {
+                value: "sort_date"
+              }
+            }
+          }
+        }
+      }
+    };
+  }
+
+  function normalizeDivarPriceText(value) {
+    const normalized = globalThis.RashnuNormalize.normalizeWhitespace(value || "");
+    if (!normalized) {
+      return "";
+    }
+    if (/^رایگان$/u.test(normalized)) {
+      return normalized;
+    }
+    return normalized;
+  }
+
+  function inferDivarConditionStatus(value) {
+    const normalized = globalThis.RashnuNormalize.normalizeWhitespace(
+      globalThis.RashnuNormalize.normalizeDigits(value || "")
+    )
+      .toLowerCase();
+    if (!normalized) {
+      return null;
+    }
+    if (normalized.includes("نو")) {
+      return normalized.includes("در حد نو") ? "used" : "new";
+    }
+    if (normalized.includes("کارکرده")) {
+      return "used";
+    }
+    return null;
+  }
+
+  function normalizeCandidateConditionStatus(value) {
+    return value === "new" || value === "used" ? value : null;
+  }
+
+  function isDivarPriceReadyCandidate(candidate) {
+    const priceValue = Number(candidate?.priceValue ?? candidate?.price ?? 0);
+    if (!Number.isFinite(priceValue) || priceValue < DIVAR_MATCH_MIN_PRICE) {
+      return false;
+    }
+    return !hasDivarBarterOrInstallmentTerms(candidate);
+  }
+
+  function hasDivarBarterOrInstallmentTerms(candidate) {
+    const haystack = normalizeGlobalSearchComparableTitle([
+      candidate?.title || "",
+      candidate?.priceText || "",
+      candidate?.conditionText || "",
+      candidate?.locationText || ""
+    ].join(" "));
+    return /(?:معاوضه|اقساط|قسطی)/u.test(haystack);
+  }
+
+  function scoreDivarPrimaryCandidate(candidate) {
+    let score = Number(candidate?.confidence || 0);
+    if (isDivarPriceReadyCandidate(candidate)) {
+      score += DIVAR_MATCH_PRICE_BONUS;
+    } else {
+      score -= DIVAR_MATCH_MISSING_PRICE_PENALTY;
+    }
+    if (hasDivarBarterOrInstallmentTerms(candidate)) {
+      score -= DIVAR_MATCH_BARTER_PENALTY;
+    }
+    return score;
   }
 
   async function translateQueryForGlobalMarketplace(query, targetSite) {
@@ -4060,6 +4867,11 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   }
 
   async function getPanelState() {
+    primePanelAuxiliaryState();
+    const divarLocationOptions =
+      Array.isArray(divarLocationOptionsCache) && divarLocationOptionsCache.length
+        ? divarLocationOptionsCache
+        : [normalizeDivarLocation(divarLocation)];
     const activeTab = await getActiveTab();
     const tabId = activeTab?.id;
     const state = tabId == null ? null : ensureTabState(tabId);
@@ -4085,10 +4897,41 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       themeMode,
       providerSearchEnabled: { ...providerSearchEnabled },
       providerPriceVisible: { ...providerPriceVisible },
+      divarLocation: normalizeDivarLocation(divarLocation),
+      divarLocationOptions,
       logCount: logEntries.length,
       logHelper: { ...logHelperStatus },
       page: serializePageState(state, activeTab)
     };
+  }
+
+  function primePanelAuxiliaryState() {
+    if (!divarLocationOptionsPromise && !(Array.isArray(divarLocationOptionsCache) && divarLocationOptionsCache.length)) {
+      getDivarLocationOptions()
+        .then(() => {
+          notifyPanels();
+        })
+        .catch(() => {});
+    }
+
+    const now = Date.now();
+    const shouldRefreshHelper =
+      !logHelperHealthPromise &&
+      ((logHelperStatus.connected && now - lastLogHelperHealthCheckMs >= LOG_HELPER_HEALTH_CACHE_MS) ||
+        (!logHelperStatus.connected && now >= nextLogHelperRetryAt));
+    if (shouldRefreshHelper) {
+      ensureLogHelperHealth()
+        .then(() => {
+          notifyPanels();
+        })
+        .catch(() => {});
+    }
+  }
+
+  function clearAllMatchCaches() {
+    for (const state of tabStates.values()) {
+      state.matchCache?.clear?.();
+    }
   }
 
   function syncStateToTabUrl(tabId, tabUrl, source) {
@@ -4232,6 +5075,75 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     return { reloaded };
   }
 
+  async function reloadExtensionFromPanel(options = {}) {
+    const activeTab = await getActiveTab();
+    if (!activeTab?.id) {
+      return {
+        reloaded: false,
+        mode: "rashnu"
+      };
+    }
+    addLog("info", "background", "panel_hard_refresh_triggered", {
+      tabId: activeTab.id,
+      mode: "rashnu"
+    });
+    await persistLogsToStorage(true);
+    panelActive = true;
+    await chrome.storage.local.set({
+      rashnuPanelActive: true
+    }).catch(() => {});
+    await syncActionIcon().catch(() => {});
+    const state = ensureTabState(activeTab.id);
+    resetPageState(state);
+    notifyPanels();
+
+    const rescanned = await forceRescanTab(activeTab.id);
+    let usedTabReloadFallback = false;
+    if (!rescanned && isReloadableTabUrl(activeTab.url)) {
+      await chrome.tabs.reload(activeTab.id).then(() => {
+        usedTabReloadFallback = true;
+        addLog("warn", "background", "panel_hard_refresh_tab_reload_fallback", {
+          tabId: activeTab.id
+        });
+      }).catch((error) => {
+        addLog("warn", "background", "panel_hard_refresh_tab_reload_failed", {
+          tabId: activeTab.id,
+          error
+        });
+      });
+    }
+
+    addLog("info", "background", "refresh_completed", {
+      tabId: activeTab.id,
+      mode: usedTabReloadFallback ? "panel_hard_refresh_tab_reload" : "panel_hard_refresh"
+    });
+    notifyPanels();
+
+    if (Boolean(options?.runtimeReload)) {
+      addLog("info", "background", "panel_runtime_reload_scheduled", {
+        tabId: activeTab.id
+      });
+      setTimeout(() => {
+        try {
+          chrome.runtime.reload();
+        } catch (_error) {}
+      }, 180);
+      return {
+        reloaded: true,
+        mode: "extension_runtime_reload"
+      };
+    }
+
+    return {
+      reloaded: rescanned || usedTabReloadFallback,
+      mode: usedTabReloadFallback ? "tab_reload" : "rashnu"
+    };
+  }
+
+  function isReloadableTabUrl(url) {
+    return typeof url === "string" && /^(https?:\/\/|file:\/\/)/i.test(url);
+  }
+
   async function reloadSingleForActiveTab(sourceId) {
     const activeTab = await getActiveTab();
     if (!activeTab?.id || !sourceId) {
@@ -4292,37 +5204,59 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   }
 
   async function softRescanTab(tabId) {
-    try {
-      await chrome.tabs.sendMessage(tabId, {
-        type: "RASHNU_SOFT_RESCAN"
+    const tab = await chrome.tabs.get(tabId).catch(() => null);
+    const site = inferSiteFromUrl(tab?.url || "");
+    if (!canRescanSite(site)) {
+      addLog("debug", "background", "soft_rescan_skipped", {
+        tabId,
+        site
       });
+      return false;
+    }
+    try {
+      await sendTabMessageWithContentScriptRecovery(tabId, site, {
+        type: "RASHNU_SOFT_RESCAN"
+      }, "soft_rescan");
       addLog("info", "background", "soft_rescan", {
         tabId
       });
+      return true;
     } catch (error) {
       addLog("warn", "background", "soft_rescan_failed", {
         tabId,
         error
       });
+      return false;
     }
   }
 
   async function forceRescanTab(tabId) {
+    const tab = await chrome.tabs.get(tabId).catch(() => null);
+    const site = inferSiteFromUrl(tab?.url || "");
+    if (!canRescanSite(site)) {
+      addLog("debug", "background", "force_rescan_skipped", {
+        tabId,
+        site
+      });
+      return false;
+    }
     const state = ensureTabState(tabId);
     await persistLogsToStorage(true);
     resetPageState(state);
     try {
-      await chrome.tabs.sendMessage(tabId, {
+      await sendTabMessageWithContentScriptRecovery(tabId, site, {
         type: "RASHNU_FORCE_RESCAN"
-      });
+      }, "force_rescan");
       addLog("info", "background", "force_rescan", {
         tabId
       });
+      return true;
     } catch (error) {
       addLog("warn", "background", "force_rescan_failed", {
         tabId,
         error
       });
+      return false;
     }
   }
 

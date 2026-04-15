@@ -26,6 +26,7 @@
     torob: 'a[href*="/p/"], a[href^="/p/"]',
     technolife: 'a[href*="/product-"], a[href^="/product-"]',
     emalls: 'a.prd-name[href], #listdiv a[href*="~id~"]',
+    basalam: 'a[href^="/"][href*="/product/"], a[href*="basalam.com/"][href*="/product/"]',
     amazon: 'h2 a[href*="/dp/"], h2 a[href*="/gp/product/"], h2 a[href*="/gp/aw/d/"]',
     ebay: 'li.s-item a.s-item__link[href*="/itm/"], a[href*="/itm/"]'
   };
@@ -98,6 +99,23 @@
     "span.price",
     "div.price"
   ];
+  const BASALAM_CURRENT_PRICE_SELECTORS = [
+    ".TQCqjN",
+    ".yVL64g",
+    ".P_00Qp",
+    "[class*='price']",
+    "[class*='Price']"
+  ];
+  const BASALAM_ORIGINAL_PRICE_SELECTORS = [
+    ".OYeCuj",
+    "[class*='original']",
+    "[class*='strike']"
+  ];
+  const BASALAM_DISCOUNT_PERCENT_SELECTORS = [
+    ".elQ72J",
+    "[class*='discount']",
+    "[class*='percent']"
+  ];
   const AMAZON_CURRENT_PRICE_SELECTORS = [
     ".a-price .a-offscreen",
     ".a-price-range .a-offscreen",
@@ -140,6 +158,9 @@
     if (host.includes("emalls.ir")) {
       return "emalls";
     }
+    if (host.includes("basalam.com")) {
+      return "basalam";
+    }
     if (host.includes("amazon.")) {
       return "amazon";
     }
@@ -161,6 +182,9 @@
     }
     if (site === "emalls") {
       return /~id~\d+/i.test(location.pathname);
+    }
+    if (site === "basalam") {
+      return /^(?:\/[^/]+\/product\/\d+(?:\/|$)|\/product\/\d+(?:\/|$))/i.test(location.pathname);
     }
     if (site === "amazon") {
       return /\/(?:dp|gp\/product|gp\/aw\/d)\/[A-Z0-9]{8,}/i.test(location.pathname);
@@ -199,6 +223,14 @@
         continue;
       }
       if (site === "emalls" && !/~id~\d+/i.test(href)) {
+        continue;
+      }
+      if (site === "basalam" && !/\/[^/]+\/product\/\d+/i.test(href)) {
+        if (!/\/product\/\d+/i.test(href)) {
+          continue;
+        }
+      }
+      if (site === "basalam" && /\/(?:account|about|help|landings?)\b/i.test(href)) {
         continue;
       }
       if (site === "amazon" && !/\/(?:dp|gp\/product|gp\/aw\/d)\//i.test(href)) {
@@ -293,7 +325,8 @@
     }
 
     const links = resolveListingLinks(baseContext, options);
-    const isListing = links.length >= 3;
+    const minimumListingLinks = baseContext.site === "basalam" ? 1 : 3;
+    const isListing = links.length >= minimumListingLinks;
     const nextContext = {
       ...baseContext,
       mode: isListing ? "listing" : "unsupported",
@@ -521,6 +554,7 @@
     const links = resolveListingLinks(resolvedContext);
     const records = [];
     const seenElements = new Set();
+    const seenSourceIds = new Set();
     let position = 0;
 
     for (const link of links) {
@@ -536,6 +570,10 @@
       if (!item) {
         continue;
       }
+      if (seenSourceIds.has(item.sourceId)) {
+        continue;
+      }
+      seenSourceIds.add(item.sourceId);
       records.push({
         element: container,
         item
@@ -603,6 +641,38 @@
     } catch (_error) {
       return null;
     }
+  }
+
+  function normalizeBasalamAssetUrl(value) {
+    const raw = normalizeApi.normalizeWhitespace(value || "");
+    if (!raw) {
+      return null;
+    }
+    return normalizeApi.canonicalizeUrl(raw, "https://basalam.com");
+  }
+
+  function getBasalamProductPageDataFromNextData() {
+    const nextData = getNextDataJson();
+    const queries = nextData?.props?.pageProps?.dehydratedState?.queries;
+    if (!Array.isArray(queries)) {
+      return null;
+    }
+    for (const queryEntry of queries) {
+      const queryHash = String(queryEntry?.queryHash || "");
+      if (!queryHash.startsWith("[\"pdp\",")) {
+        continue;
+      }
+      const data = queryEntry?.state?.data;
+      const product =
+        data?.product ||
+        data?.core?.product ||
+        data?.core ||
+        null;
+      if (product && typeof product === "object") {
+        return product;
+      }
+    }
+    return null;
   }
 
   function normalizeTechnolifeAssetUrl(value) {
@@ -1257,6 +1327,126 @@
     return pickImageUrl(document);
   }
 
+  function pickBasalamDetailTitle() {
+    const nextDataProduct = getBasalamProductPageDataFromNextData();
+    const titleFromNext = normalizeApi.cleanProductTitle(nextDataProduct?.title || nextDataProduct?.name || "");
+    if (titleFromNext) {
+      return titleFromNext;
+    }
+
+    const title = normalizeApi.cleanProductTitle(
+      textFromDocument([
+        "h1.F7OJfQ",
+        "#pdp-primary-sections h1",
+        "main h1"
+      ])
+    );
+    if (title) {
+      return title;
+    }
+
+    const jsonLdProduct = getJsonLdProduct();
+    if (jsonLdProduct?.name) {
+      return normalizeApi.cleanProductTitle(jsonLdProduct.name);
+    }
+
+    const ogTitle = contentFromMeta('meta[property="og:title"]');
+    if (ogTitle) {
+      return normalizeApi.cleanProductTitle(
+        ogTitle.replace(/^خرید و قیمت\s*/u, "").replace(/\s+از غرفه.*$/u, "").trim()
+      );
+    }
+
+    return normalizeApi.cleanProductTitle(document.title || "");
+  }
+
+  function pickBasalamDetailPriceInfo() {
+    const nextDataProduct = getBasalamProductPageDataFromNextData();
+    const currentValue = normalizeApi.normalizePriceUnit(
+      nextDataProduct?.price || nextDataProduct?.primaryPrice,
+      "IRR"
+    );
+    const originalValue =
+      Number(nextDataProduct?.primaryPrice) > Number(nextDataProduct?.price)
+        ? normalizeApi.normalizePriceUnit(nextDataProduct?.primaryPrice, "IRR")
+        : null;
+    const nextDiscount = normalizeApi.parseDiscountPercent(
+      nextDataProduct?.discount?.discountPercent
+    );
+    if (currentValue) {
+      return {
+        priceText: normalizeApi.formatToman(currentValue),
+        priceValue: currentValue,
+        originalPriceText: originalValue ? normalizeApi.formatToman(originalValue) : "",
+        originalPriceValue: originalValue,
+        discountPercent: Number.isFinite(nextDiscount)
+          ? normalizeApi.formatDiscountPercent(nextDiscount)
+          : ""
+      };
+    }
+
+    const jsonLdProduct = getJsonLdProduct();
+    const offerPrice =
+      jsonLdProduct?.offers?.price ||
+      (Array.isArray(jsonLdProduct?.offers) ? jsonLdProduct.offers[0]?.price : null);
+    const offerCurrency =
+      jsonLdProduct?.offers?.priceCurrency ||
+      (Array.isArray(jsonLdProduct?.offers) ? jsonLdProduct.offers[0]?.priceCurrency : null);
+    if (offerPrice) {
+      const normalizedPrice = normalizeApi.normalizePriceUnit(offerPrice, offerCurrency || "IRR");
+      return {
+        priceText: normalizedPrice ? normalizeApi.formatToman(normalizedPrice) : String(offerPrice),
+        priceValue: normalizedPrice,
+        originalPriceText: "",
+        originalPriceValue: null,
+        discountPercent: ""
+      };
+    }
+
+    const domInfo = pickPriceInfo(document.querySelector("main") || document.body, "basalam", {
+      preferHighestValue: false
+    });
+    if (domInfo.priceText) {
+      return domInfo;
+    }
+
+    return {
+      priceText: "",
+      priceValue: null,
+      originalPriceText: "",
+      originalPriceValue: null,
+      discountPercent: ""
+    };
+  }
+
+  function pickBasalamDetailImage() {
+    const nextDataProduct = getBasalamProductPageDataFromNextData();
+    const nextPrimaryImage =
+      normalizeBasalamAssetUrl(nextDataProduct?.photo?.lg) ||
+      normalizeBasalamAssetUrl(nextDataProduct?.photo?.original) ||
+      normalizeBasalamAssetUrl(nextDataProduct?.photos?.[0]?.lg) ||
+      normalizeBasalamAssetUrl(nextDataProduct?.photos?.[0]?.original);
+    if (nextPrimaryImage) {
+      return nextPrimaryImage;
+    }
+
+    const jsonLdProduct = getJsonLdProduct();
+    if (typeof jsonLdProduct?.image === "string") {
+      return normalizeBasalamAssetUrl(jsonLdProduct.image);
+    }
+    if (Array.isArray(jsonLdProduct?.image) && jsonLdProduct.image[0]) {
+      const image = jsonLdProduct.image[0]?.contentUrl || jsonLdProduct.image[0];
+      return normalizeBasalamAssetUrl(image);
+    }
+
+    const ogImage = contentFromMeta('meta[property="og:image"]');
+    if (ogImage) {
+      return normalizeBasalamAssetUrl(ogImage);
+    }
+
+    return pickImageUrl(document);
+  }
+
   function buildDetailItem(site, title, priceText, imageUrl, position, detailRole) {
     let detailPriceInfo = {
       priceText: priceText || "",
@@ -1271,6 +1461,8 @@
       detailPriceInfo = pickTechnolifeDetailPriceInfo();
     } else if (site === "torob") {
       detailPriceInfo = pickTorobDetailPriceInfo();
+    } else if (site === "basalam") {
+      detailPriceInfo = pickBasalamDetailPriceInfo();
     }
     return {
       sourceId: normalizeApi.buildSourceId(location.href, site),
@@ -1314,6 +1506,13 @@
             "h1",
             '[class*="title"] h1'
           ]
+        : site === "basalam"
+          ? [
+              "h1.F7OJfQ",
+              "#pdp-primary-sections",
+              "#pdp-cta",
+              "main h1"
+            ]
         : site === "emalls"
           ? [
               "h1",
@@ -1664,6 +1863,29 @@
       return records.concat(extractSuggestedDetailItems(site, mainItem.sourceId, 1));
     }
 
+    if (site === "basalam") {
+      const title = pickBasalamDetailTitle();
+      if (!title) {
+        return [];
+      }
+      const priceInfo = pickBasalamDetailPriceInfo();
+      const mainItem = buildDetailItem(
+        site,
+        title,
+        priceInfo.priceText,
+        pickBasalamDetailImage(),
+        0,
+        "main"
+      );
+      const records = [
+        {
+          element: findMainDetailRoot(site),
+          item: mainItem
+        }
+      ];
+      return records.concat(extractSuggestedDetailItems(site, mainItem.sourceId, 1));
+    }
+
     if (site === "amazon") {
       const title = pickAmazonDetailTitle();
       if (!title) {
@@ -1839,6 +2061,8 @@
         ? TECHNOLIFE_CURRENT_PRICE_SELECTORS
         : site === "emalls"
           ? EMALLS_CURRENT_PRICE_SELECTORS
+          : site === "basalam"
+            ? BASALAM_CURRENT_PRICE_SELECTORS
           : site === "amazon"
             ? AMAZON_CURRENT_PRICE_SELECTORS
             : site === "ebay"
@@ -1848,6 +2072,8 @@
       ? DIGIKALA_ORIGINAL_PRICE_SELECTORS
       : site === "technolife"
         ? TECHNOLIFE_ORIGINAL_PRICE_SELECTORS
+        : site === "basalam"
+          ? BASALAM_ORIGINAL_PRICE_SELECTORS
         : site === "amazon"
           ? AMAZON_ORIGINAL_PRICE_SELECTORS
           : [];
@@ -1855,6 +2081,8 @@
       ? DIGIKALA_DISCOUNT_PERCENT_SELECTORS
       : site === "technolife"
         ? TECHNOLIFE_DISCOUNT_PERCENT_SELECTORS
+        : site === "basalam"
+          ? BASALAM_DISCOUNT_PERCENT_SELECTORS
         : [];
     const preferHighestValue = Boolean(options?.preferHighestValue);
 

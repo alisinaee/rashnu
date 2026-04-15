@@ -149,6 +149,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
   let panelFontScale = 0;
   let panelLayoutMode = "list";
   let minimalViewEnabled = false;
+  let priceHeatColorsEnabled = true;
   let settingsOpen = false;
   let themeMode = "system";
   let amazonApiCredentials = normalizeApiCredentialConfig();
@@ -210,6 +211,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       "rashnuFontScale",
       "rashnuLayoutMode",
       "rashnuMinimalViewEnabled",
+      "rashnuPriceHeatColorsEnabled",
       "rashnuSettingsOpen",
       "rashnuThemeMode",
       "rashnuPanelActive",
@@ -228,6 +230,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     panelFontScale = clampFontScale(Number.isFinite(stored.rashnuFontScale) ? stored.rashnuFontScale : 0);
     panelLayoutMode = stored.rashnuLayoutMode === "grid" ? "grid" : "list";
     minimalViewEnabled = Boolean(stored.rashnuMinimalViewEnabled);
+    priceHeatColorsEnabled = stored.rashnuPriceHeatColorsEnabled !== false;
     settingsOpen = Boolean(stored.rashnuSettingsOpen);
     themeMode = ["system", "dark", "light"].includes(stored.rashnuThemeMode) ? stored.rashnuThemeMode : "system";
     panelActive = Boolean(stored.rashnuPanelActive);
@@ -295,6 +298,10 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
     if (Object.prototype.hasOwnProperty.call(changes, "rashnuMinimalViewEnabled")) {
       minimalViewEnabled = Boolean(changes.rashnuMinimalViewEnabled.newValue);
+      notifyPanels();
+    }
+    if (Object.prototype.hasOwnProperty.call(changes, "rashnuPriceHeatColorsEnabled")) {
+      priceHeatColorsEnabled = changes.rashnuPriceHeatColorsEnabled.newValue !== false;
       notifyPanels();
     }
     if (Object.prototype.hasOwnProperty.call(changes, "rashnuSettingsOpen")) {
@@ -597,6 +604,16 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       });
       notifyPanels();
       sendResponse({ enabled: minimalViewEnabled });
+      return false;
+    }
+
+    if (message.type === "RASHNU_SET_PRICE_HEAT_COLORS") {
+      priceHeatColorsEnabled = Boolean(message.payload?.enabled);
+      chrome.storage.local.set({
+        rashnuPriceHeatColorsEnabled: priceHeatColorsEnabled
+      });
+      notifyPanels();
+      sendResponse({ enabled: priceHeatColorsEnabled });
       return false;
     }
 
@@ -3666,7 +3683,8 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
 
     const candidatesByKey = new Map();
-    const linkRegex = /<a[^>]*href="([^"]*\/[^/"\s]+\/product\/\d+[^"]*)"[^>]*>([\s\S]{0,2600}?)<\/a>/gi;
+    const linkRegex =
+      /<a[^>]*href="([^"]*(?:\/[^/"\s]+\/product\/\d+|\/product\/\d+|\/p\/[^/"\s?#]+)[^"]*)"[^>]*>([\s\S]{0,2600}?)<\/a>/gi;
     let match;
     while ((match = linkRegex.exec(text)) && candidatesByKey.size < 48) {
       const targetUrl = globalThis.RashnuNormalize.canonicalizeUrl(decodeHtmlEntities(match[1] || ""), "https://basalam.com");
@@ -3703,7 +3721,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     const candidatesByKey = new Map();
 
     const productCardRegex =
-      /\[!\[Image\s*\d+:\s*([^\]]+)\]\((https?:\/\/[^)\s]+)\)\s*##\s*([\s\S]{0,520}?)\]\((https?:\/\/(?:www\.)?basalam\.com\/[^)\s]+\/product\/\d+[^)\s]*)\)/gi;
+      /\[!\[Image\s*\d+:\s*([^\]]+)\]\((https?:\/\/[^)\s]+)\)\s*##\s*([\s\S]{0,520}?)\]\((https?:\/\/(?:www\.)?basalam\.com\/(?:[^)\s]+\/product\/\d+|product\/\d+|p\/[^)\s?#]+)[^)\s]*)\)/gi;
     let productCardMatch;
     while ((productCardMatch = productCardRegex.exec(text)) && candidatesByKey.size < 48) {
       const imageTitle = sanitizeMarkdownText(productCardMatch[1] || "");
@@ -3722,7 +3740,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     }
 
     const genericLinkRegex =
-      /\[([\s\S]{1,800}?)\]\((https?:\/\/(?:www\.)?basalam\.com\/[^)\s]+\/product\/\d+[^)\s]*)\)/gi;
+      /\[([\s\S]{1,800}?)\]\((https?:\/\/(?:www\.)?basalam\.com\/(?:[^)\s]+\/product\/\d+|product\/\d+|p\/[^)\s?#]+)[^)\s]*)\)/gi;
     let genericMatch;
     while ((genericMatch = genericLinkRegex.exec(text)) && candidatesByKey.size < 48) {
       const label = sanitizeMarkdownText(genericMatch[1] || "");
@@ -3849,9 +3867,9 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
     if (!normalized) {
       return null;
     }
-    const segments = globalThis.RashnuNormalize.extractBasalamProductSegments(normalized);
-    if (segments?.vendorSlug && segments?.productId) {
-      return `basalam:${segments.vendorSlug}:${segments.productId}`;
+    const sourceId = globalThis.RashnuNormalize.buildSourceId(normalized, "basalam");
+    if (typeof sourceId === "string" && sourceId.startsWith("basalam:")) {
+      return sourceId;
     }
     return normalized.replace(/^https?:\/\/(?:www\.)?/i, "").toLowerCase();
   }
@@ -5046,6 +5064,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
       fontScale: panelFontScale,
       layoutMode: panelLayoutMode,
       minimalViewEnabled,
+      priceHeatColorsEnabled,
       settingsOpen,
       themeMode,
       providerSearchEnabled: { ...providerSearchEnabled },
@@ -5811,6 +5830,7 @@ importScripts("lib/logger.js", "lib/normalize.js", "lib/match.js");
         fontScale: panelFontScale,
         layoutMode: panelLayoutMode,
         minimalViewEnabled,
+        priceHeatColorsEnabled,
         settingsOpen,
         themeMode,
         providerSearchEnabled: { ...providerSearchEnabled },

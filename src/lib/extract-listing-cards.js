@@ -26,7 +26,8 @@
     torob: 'a[href*="/p/"], a[href^="/p/"]',
     technolife: 'a[href*="/product-"], a[href^="/product-"]',
     emalls: 'a.prd-name[href], #listdiv a[href*="~id~"]',
-    basalam: 'a[href^="/"][href*="/product/"], a[href*="basalam.com/"][href*="/product/"]',
+    basalam:
+      'a[href^="/"][href*="/product/"], a[href*="basalam.com/"][href*="/product/"], a[href^="/p/"], a[href*="basalam.com/p/"]',
     amazon: 'h2 a[href*="/dp/"], h2 a[href*="/gp/product/"], h2 a[href*="/gp/aw/d/"]',
     ebay: 'li.s-item a.s-item__link[href*="/itm/"], a[href*="/itm/"]'
   };
@@ -184,7 +185,9 @@
       return /~id~\d+/i.test(location.pathname);
     }
     if (site === "basalam") {
-      return /^(?:\/[^/]+\/product\/\d+(?:\/|$)|\/product\/\d+(?:\/|$))/i.test(location.pathname);
+      return /^(?:\/[^/]+\/product\/\d+(?:\/|$)|\/product\/\d+(?:\/|$)|\/p\/[^/?#]+(?:[/?#]|$))/i.test(
+        location.pathname
+      );
     }
     if (site === "amazon") {
       return /\/(?:dp|gp\/product|gp\/aw\/d)\/[A-Z0-9]{8,}/i.test(location.pathname);
@@ -232,7 +235,7 @@
         continue;
       }
       if (site === "basalam" && !/\/[^/]+\/product\/\d+/i.test(href)) {
-        if (!/\/product\/\d+/i.test(href)) {
+        if (!/\/product\/\d+/i.test(href) && !/\/p\/[^/?#]+/i.test(href)) {
           continue;
         }
       }
@@ -485,7 +488,10 @@
 
     const linkSelector = LINK_SELECTORS[site];
     const linkCount = element.querySelectorAll(linkSelector).length;
-    if (linkCount < 1 || linkCount > 5) {
+    if (linkCount < 1) {
+      return false;
+    }
+    if (site !== "basalam" && linkCount > 5) {
       return false;
     }
 
@@ -494,17 +500,38 @@
     return hasImage && textLength >= 15;
   }
 
-  function extractCardData(cardElement, position, site) {
+  function extractCardData(cardElement, position, site, preferredLink = null) {
     if (!isNodeRendered(cardElement, { minWidth: 80, minHeight: 80 })) {
       return null;
     }
     const productLinkSelector = LINK_SELECTORS[site];
-    const link =
-      cardElement.matches(productLinkSelector)
-        ? cardElement
-        : cardElement.querySelector(productLinkSelector);
+    const linkCandidates = [];
+    if (preferredLink instanceof Element) {
+      linkCandidates.push(preferredLink);
+    }
+    if (cardElement.matches(productLinkSelector)) {
+      linkCandidates.push(cardElement);
+    }
+    for (const candidate of cardElement.querySelectorAll(productLinkSelector)) {
+      if (!linkCandidates.includes(candidate)) {
+        linkCandidates.push(candidate);
+      }
+    }
 
-    if (!link || !isNodeRendered(link, { minWidth: 2, minHeight: 2 })) {
+    const link = linkCandidates.find((candidate) => {
+      if (!(candidate instanceof Element)) {
+        return false;
+      }
+      if (isNodeRendered(candidate, { minWidth: 2, minHeight: 2 })) {
+        return true;
+      }
+      if (site !== "basalam") {
+        return false;
+      }
+      return isNodeRendered(cardElement, { minWidth: 80, minHeight: 80 });
+    });
+
+    if (!link) {
       return null;
     }
 
@@ -572,7 +599,7 @@
         continue;
       }
       seenElements.add(container);
-      const item = extractCardData(container, position, resolvedContext.site);
+      const item = extractCardData(container, position, resolvedContext.site, link);
       if (!item) {
         continue;
       }

@@ -444,6 +444,42 @@
     };
   }
 
+  function extractBasalamProductKey(url) {
+    const value = String(url || "");
+    const vendorProductMatch = value.match(
+      /^https?:\/\/(?:www\.)?basalam\.com\/([^/?#]+)\/product\/(\d+)(?:[/?#]|$)/i
+    );
+    if (vendorProductMatch) {
+      return {
+        kind: "vendor_product",
+        vendorSlug: vendorProductMatch[1],
+        productId: vendorProductMatch[2]
+      };
+    }
+
+    const directProductMatch = value.match(
+      /^https?:\/\/(?:www\.)?basalam\.com\/product\/(\d+)(?:[/?#]|$)/i
+    );
+    if (directProductMatch) {
+      return {
+        kind: "product",
+        productId: directProductMatch[1]
+      };
+    }
+
+    const shortProductMatch = value.match(
+      /^https?:\/\/(?:www\.)?basalam\.com\/p\/([^/?#]+)(?:[/?#]|$)/i
+    );
+    if (shortProductMatch) {
+      return {
+        kind: "short",
+        shortId: shortProductMatch[1]
+      };
+    }
+
+    return null;
+  }
+
   function buildSourceId(productUrl, site) {
     const canonicalUrl = canonicalizeUrl(productUrl);
     if (site === "digikala") {
@@ -477,8 +513,17 @@
     }
 
     if (site === "basalam") {
-      const segments = extractBasalamProductSegments(canonicalUrl);
-      return segments ? `basalam:${segments.vendorSlug}:${segments.productId}` : `basalam:${canonicalUrl}`;
+      const key = extractBasalamProductKey(canonicalUrl);
+      if (!key) {
+        return `basalam:${canonicalUrl}`;
+      }
+      if (key.kind === "vendor_product") {
+        return `basalam:${key.vendorSlug}:${key.productId}`;
+      }
+      if (key.kind === "product") {
+        return `basalam:product:${key.productId}`;
+      }
+      return `basalam:p:${key.shortId}`;
     }
 
     return canonicalUrl;
